@@ -43,7 +43,7 @@ class ModelSettings(Settings):
         return tiktoken.encoding_for_model(self.model).encode
 
 
-class ChatCompletionSettings(Settings):
+class ChatCompletionSettings(ModelSettings):
     model: str = Field(
         default="gpt-3.5-turbo-1106",
         description="The default chat model to use.",
@@ -64,7 +64,7 @@ class ChatCompletionSettings(Settings):
         )
 
 
-class AssistantSettings(Settings):
+class AssistantSettings(ModelSettings):
     model: str = Field(
         default="gpt-4-1106-preview",
         description="The default assistant model to use.",
