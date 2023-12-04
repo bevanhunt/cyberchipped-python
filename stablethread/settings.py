@@ -7,9 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 if TYPE_CHECKING:
     from openai import AsyncClient, Client
-    from openai._base_client import HttpxBinaryResponseContent
     from openai.types.chat import ChatCompletion
-    from openai.types.images_response import ImagesResponse
 
 
 class Settings(BaseSettings):
@@ -74,7 +72,8 @@ class AssistantSettings(Settings):
 
 
 class ChatSettings(Settings):
-    completions: ChatCompletionSettings = Field(default_factory=ChatCompletionSettings)
+    completions: ChatCompletionSettings = Field(
+        default_factory=ChatCompletionSettings)
 
 
 class OpenAISettings(Settings):
