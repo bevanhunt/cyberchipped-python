@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "cyberchipped"
 version = "0.1.0"
-description = "The best library to create OpenAI Assistants"
+description = "OpenAI Assistants made easy"
 authors = ["Bevan Hunt <bevan@bevanhunt.com>"]
 license = "Apache-2.0"
 readme = "README.md"

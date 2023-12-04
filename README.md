@@ -92,9 +92,6 @@ WhichGalaxy("Earth")
 # WhichGalaxy.MILKY_WAY
 ```
 
-## Code Examples
-In progress...
-
 ## Source
 This is a hard fork of Marvin pre-release
 
