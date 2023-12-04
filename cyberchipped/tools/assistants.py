@@ -1,6 +1,6 @@
 from typing import Any, Union
 
-from stablethread.requests import CodeInterpreterTool, RetrievalTool, Tool
+from cyberchipped.requests import CodeInterpreterTool, RetrievalTool, Tool
 
 Retrieval = RetrievalTool()
 CodeInterpreter = CodeInterpreterTool()

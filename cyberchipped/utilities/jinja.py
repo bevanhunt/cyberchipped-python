@@ -10,7 +10,7 @@ from jinja2 import StrictUndefined, select_autoescape
 from jinja2 import Template as BaseTemplate
 from typing_extensions import Self
 
-from stablethread.requests import BaseMessage as Message
+from cyberchipped.requests import BaseMessage as Message
 
 
 class BaseEnvironment(pydantic.BaseModel):

@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Callable, Optional
 from openai.types.beta.threads import ThreadMessage
 from pydantic import BaseModel, Field
 
-from stablethread.assistants.formatting import pprint_message
-from stablethread.utilities.asyncio import (
+from cyberchipped.assistants.formatting import pprint_message
+from cyberchipped.utilities.asyncio import (
     ExposeSyncMethodsMixin,
     expose_sync_method,
 )
-from stablethread.utilities.logging import get_logger
-from stablethread.utilities.openai import get_client
-from stablethread.utilities.pydantic import parse_as
+from cyberchipped.utilities.logging import get_logger
+from cyberchipped.utilities.openai import get_client
+from cyberchipped.utilities.pydantic import parse_as
 
 logger = get_logger("Threads")
 
@@ -115,7 +115,7 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
         if self.id is None:
             await self.create_async()
 
-        from stablethread.assistants.runs import Run
+        from cyberchipped.assistants.runs import Run
 
         run = Run(assistant=assistant, thread=self, **run_kwargs)
         return await run.run_async()

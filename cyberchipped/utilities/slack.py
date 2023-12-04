@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 import httpx
 from pydantic import BaseModel, field_validator
 
-import stablethread
+import cyberchipped
 
 
 class EventBlockElement(BaseModel):
@@ -70,7 +70,7 @@ class SlackPayload(BaseModel):
 async def get_token() -> str:
     """Get the Slack bot token from the environment."""
     try:
-        token = stablethread.settings.slack_api_token
+        token = cyberchipped.settings.slack_api_token
     except AttributeError:
         token = os.getenv("STABLETHREAD_SLACK_API_TOKEN")
         if not token:

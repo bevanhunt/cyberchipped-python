@@ -50,14 +50,14 @@ class ChatCompletionSettings(ModelSettings):
     )
 
     async def acreate(self, **kwargs: Any) -> "ChatCompletion":
-        from stablethread.settings import settings
+        from cyberchipped.settings import settings
 
         return await settings.openai.async_client.chat.completions.create(
             model=self.model, **kwargs
         )
 
     def create(self, **kwargs: Any) -> "ChatCompletion":
-        from stablethread.settings import settings
+        from cyberchipped.settings import settings
 
         return settings.openai.client.chat.completions.create(
             model=self.model, **kwargs

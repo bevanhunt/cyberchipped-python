@@ -2,16 +2,16 @@ from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
-import stablethread.utilities.tools
-from stablethread.requests import Tool
-from stablethread.tools.assistants import AssistantTools
-from stablethread.utilities.asyncio import (
+import cyberchipped.utilities.tools
+from cyberchipped.requests import Tool
+from cyberchipped.tools.assistants import AssistantTools
+from cyberchipped.utilities.asyncio import (
     ExposeSyncMethodsMixin,
     expose_sync_method,
     run_sync,
 )
-from stablethread.utilities.logging import get_logger
-from stablethread.utilities.openai import get_client
+from cyberchipped.utilities.logging import get_logger
+from cyberchipped.utilities.openai import get_client
 
 from .threads import Thread
 
@@ -72,7 +72,7 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
             (
                 tool
                 if isinstance(tool, Tool)
-                else stablethread.utilities.tools.tool_from_function(tool)
+                else cyberchipped.utilities.tools.tool_from_function(tool)
             )
             for tool in tools
         ]

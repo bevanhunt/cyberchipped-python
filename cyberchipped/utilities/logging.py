@@ -5,7 +5,7 @@ from typing import Optional
 from rich.logging import RichHandler  # type: ignore
 from rich.markup import escape  # type: ignore
 
-import stablethread
+import cyberchipped
 
 
 @lru_cache()
@@ -36,7 +36,7 @@ def setup_logging(
     if level is not None:
         logger.setLevel(level)
     else:
-        logger.setLevel(stablethread.settings.log_level)
+        logger.setLevel(cyberchipped.settings.log_level)
 
     logger.handlers.clear()
 
@@ -86,4 +86,4 @@ def add_logging_methods(logger: logging.Logger) -> None:
     setattr(logger, "critical_kv", partial(log_kv, logging.CRITICAL))
 
 
-setup_logging(level=stablethread.settings.log_level)
+setup_logging(level=cyberchipped.settings.log_level)

@@ -16,17 +16,17 @@ from typing import (
 from pydantic import BaseModel, Field, ValidationError
 from typing_extensions import ParamSpec, Self
 
-from stablethread.components.prompt import PromptFunction
-from stablethread.serializers import create_tool_from_type
-from stablethread.utilities.asyncio import (
+from cyberchipped.components.prompt import PromptFunction
+from cyberchipped.serializers import create_tool_from_type
+from cyberchipped.utilities.asyncio import (
     ExposeSyncMethodsMixin,
     expose_sync_method,
     run_async,
 )
-from stablethread.utilities.jinja import (
+from cyberchipped.utilities.jinja import (
     BaseEnvironment,
 )
-from stablethread.utilities.logging import get_logger
+from cyberchipped.utilities.logging import get_logger
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion
@@ -67,7 +67,7 @@ class AIFunction(BaseModel, Generic[P, T], ExposeSyncMethodsMixin):
         if self.fn is None:
             raise NotImplementedError
 
-        from stablethread import settings
+        from cyberchipped import settings
 
         logger = get_logger("stablethread.ai_fn")
 

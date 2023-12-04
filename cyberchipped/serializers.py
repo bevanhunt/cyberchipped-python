@@ -15,8 +15,8 @@ from pydantic import BaseModel, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaMode
 
-from stablethread import settings
-from stablethread.requests import Function, Grammar, Tool
+from cyberchipped import settings
+from cyberchipped.requests import Function, Grammar, Tool
 
 U = TypeVar("U", bound=BaseModel)
 

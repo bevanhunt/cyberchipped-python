@@ -21,10 +21,10 @@ from typing import (
 from pydantic import BaseModel, Field, TypeAdapter
 from typing_extensions import ParamSpec, Self
 
-from stablethread.components.prompt import PromptFunction
-from stablethread.serializers import create_vocabulary_from_type
-from stablethread.settings import settings
-from stablethread.utilities.jinja import (
+from cyberchipped.components.prompt import PromptFunction
+from cyberchipped.serializers import create_vocabulary_from_type
+from cyberchipped.settings import settings
+from cyberchipped.utilities.jinja import (
     BaseEnvironment,
 )
 
@@ -62,7 +62,7 @@ class AIClassifier(BaseModel, Generic[P, T]):
         if self.fn is None:
             raise NotImplementedError
         if create is None:
-            from stablethread.settings import settings
+            from cyberchipped.settings import settings
 
             create = settings.openai.chat.completions.create
 

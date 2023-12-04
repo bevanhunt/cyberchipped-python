@@ -5,13 +5,13 @@ from typing import List, Optional
 import httpx
 from pydantic import BaseModel, Field, field_validator
 
-import stablethread
-from stablethread.utilities.strings import slice_tokens
+import cyberchipped
+from cyberchipped.utilities.strings import slice_tokens
 
 
 def get_token() -> str:
     try:
-        return stablethread.settings.github_token
+        return cyberchipped.settings.github_token
     except AttributeError:
         return os.environ.get("STABLETHREAD_GITHUB_TOKEN", "")
 

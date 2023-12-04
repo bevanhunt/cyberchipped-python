@@ -5,12 +5,12 @@ from openai.types.beta.threads.run import Run as OpenAIRun
 from openai.types.beta.threads.runs import RunStep as OpenAIRunStep
 from pydantic import BaseModel, Field, PrivateAttr, field_validator
 
-import stablethread.utilities.tools
-from stablethread.requests import Tool
-from stablethread.tools.assistants import AssistantTools, CancelRun
-from stablethread.utilities.asyncio import ExposeSyncMethodsMixin, expose_sync_method
-from stablethread.utilities.logging import get_logger
-from stablethread.utilities.openai import get_client
+import cyberchipped.utilities.tools
+from cyberchipped.requests import Tool
+from cyberchipped.tools.assistants import AssistantTools, CancelRun
+from cyberchipped.utilities.asyncio import ExposeSyncMethodsMixin, expose_sync_method
+from cyberchipped.utilities.logging import get_logger
+from cyberchipped.utilities.openai import get_client
 
 from .assistants import Assistant
 from .threads import Thread
@@ -47,7 +47,7 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
                 (
                     tool
                     if isinstance(tool, Tool)
-                    else stablethread.utilities.tools.tool_from_function(tool)
+                    else cyberchipped.utilities.tools.tool_from_function(tool)
                 )
                 for tool in tools
             ]
@@ -76,7 +76,7 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
 
             for tool_call in self.run.required_action.submit_tool_outputs.tool_calls:
                 try:
-                    output = stablethread.utilities.tools.call_function_tool(
+                    output = cyberchipped.utilities.tools.call_function_tool(
                         tools=tools,
                         function_name=tool_call.function.name,
                         function_arguments_json=tool_call.function.arguments,

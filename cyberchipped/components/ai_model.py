@@ -2,8 +2,8 @@ import inspect
 from functools import partial
 from typing import Any, Callable, Optional, TypeVar, Union, overload
 
-from stablethread.components.ai_function import ai_fn
-from stablethread.utilities.jinja import (
+from cyberchipped.components.ai_function import ai_fn
+from cyberchipped.utilities.jinja import (
     BaseEnvironment,
 )
 

@@ -14,15 +14,15 @@ import pydantic
 from pydantic import BaseModel
 from typing_extensions import ParamSpec, Self
 
-from stablethread.requests import BaseMessage as Message
-from stablethread.requests import Prompt, Tool
-from stablethread.serializers import (
+from cyberchipped.requests import BaseMessage as Message
+from cyberchipped.requests import Prompt, Tool
+from cyberchipped.serializers import (
     create_grammar_from_vocabulary,
     create_tool_from_type,
     create_vocabulary_from_type,
 )
-from stablethread.settings import settings
-from stablethread.utilities.jinja import (
+from cyberchipped.settings import settings
+from cyberchipped.utilities.jinja import (
     BaseEnvironment,
     Transcript,
 )

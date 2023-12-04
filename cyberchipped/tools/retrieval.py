@@ -6,12 +6,12 @@ from typing import Optional
 import httpx
 from typing_extensions import Literal
 
-import stablethread
+import cyberchipped
 
 try:
     HOST, PORT = (
-        stablethread.settings.chroma_server_host,
-        stablethread.settings.chroma_server_http_port,
+        cyberchipped.settings.chroma_server_host,
+        cyberchipped.settings.chroma_server_http_port,
     )
 except AttributeError:
     HOST = os.environ.get("STABLETHREAD_CHROMA_SERVER_HOST", "localhost")
@@ -35,7 +35,7 @@ async def create_openai_embeddings(texts: list[str]) -> list[list[float]]:
     return (
         (
             await AsyncOpenAI(
-                api_key=stablethread.settings.openai.api_key.get_secret_value()
+                api_key=cyberchipped.settings.openai.api_key.get_secret_value()
             ).embeddings.create(
                 input=[text.replace("\n", " ") for text in texts],
                 model="text-embedding-ada-002",

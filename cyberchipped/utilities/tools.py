@@ -1,10 +1,10 @@
 import inspect
 import json
 
-from stablethread.requests import Tool
-from stablethread.utilities.asyncio import run_sync
-from stablethread.utilities.logging import get_logger
-from stablethread.utilities.pydantic import cast_callable_to_model
+from cyberchipped.requests import Tool
+from cyberchipped.utilities.asyncio import run_sync
+from cyberchipped.utilities.logging import get_logger
+from cyberchipped.utilities.pydantic import cast_callable_to_model
 
 logger = get_logger("Tools")
 

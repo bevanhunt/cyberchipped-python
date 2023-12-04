@@ -3,7 +3,7 @@ from typing import Any, Callable, Generic, Literal, Optional, TypeVar, Union
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated, Self
 
-from stablethread.settings import settings
+from cyberchipped.settings import settings
 
 T = TypeVar("T", bound=BaseModel)
 
