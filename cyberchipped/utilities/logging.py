@@ -12,11 +12,11 @@ import cyberchipped
 def get_logger(
     name: Optional[str] = None,
 ) -> logging.Logger:
-    parent_logger = logging.getLogger("stablethread")
+    parent_logger = logging.getLogger("cyberchipped")
 
     if name:
-        # Append the name if given but allow explicit full names e.g. "stablethread.test"
-        # should not become "stablethread.stablethread.test"
+        # Append the name if given but allow explicit full names e.g. "cyberchipped.test"
+        # should not become "cyberchipped.cyberchipped.test"
         if not name.startswith(parent_logger.name + "."):
             logger = parent_logger.getChild(name)
         else:
@@ -43,7 +43,7 @@ def setup_logging(
     handler = RichHandler(
         rich_tracebacks=True,
         markup=False,
-        # console=Console(width=stablethread.settings.log_console_width),
+        # console=Console(width=cyberchipped.settings.log_console_width),
     )
     formatter = logging.Formatter("%(name)s: %(message)s")
     handler.setFormatter(formatter)

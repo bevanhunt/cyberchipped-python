@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="stablethread_",
-        env_file="~/.stablethread/.env",
+        env_prefix="cyberchipped_",
+        env_file="~/.cyberchipped/.env",
         extra="allow",
         arbitrary_types_allowed=True,
     )
@@ -142,7 +142,7 @@ settings = Settings()
 @contextmanager
 def temporary_settings(**kwargs: Any):
     """
-    Temporarily override Stablethread setting values. This will _not_ mutate values that have
+    Temporarily override cyberchipped setting values. This will _not_ mutate values that have
     been already been accessed at module load time.
 
     This function should only be used for testing.

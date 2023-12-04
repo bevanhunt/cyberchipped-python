@@ -69,7 +69,7 @@ class AIFunction(BaseModel, Generic[P, T], ExposeSyncMethodsMixin):
 
         from cyberchipped import settings
 
-        logger = get_logger("stablethread.ai_fn")
+        logger = get_logger("cyberchipped.ai_fn")
 
         logger.debug_kv(
             "AI Function Call",
