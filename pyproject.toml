@@ -28,19 +28,29 @@ typer = ">=0.9.0"
 tzdata = ">=2023.3"
 uvicorn = ">=0.22.0"
 
-[tool.poetry.dev-dependencies]
-datamodel-code-generator = ">=0.20.0"
-pdbpp = "~0.10"
-pydantic = {extras = ["dotenv"], version = "*"}
-ruff = "*"
-pytest-asyncio = "~0.20"
-pytest-env = ">=0.8,<2.0"
-pytest-rerunfailures = ">=10,<13"
-pytest-sugar = "~0.9"
-pytest = "~7.3.1"
-pytest-timeout = "*"
-numpy = "*"
+[project.optional-dependencies]
+dev = [
+    "stablethread[tests]",
+    "pdbpp~=0.10",
+    "pydantic[dotenv]",
+]
+tests = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-env>=0.8,<2.0",
+    "pytest-rerunfailures>=10,<13",
+    "pytest-sugar~=0.9",
+    "pytest-timeout",
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+# pytest configuration
+[tool.pytest.ini_options]
+markers = ["llm: indicates that a test calls an LLM (may be slow)."]
+timeout = 20
+testpaths = ["tests"]
+
+asyncio_mode = 'auto'
