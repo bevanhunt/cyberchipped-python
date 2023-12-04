@@ -11,7 +11,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-packages = [{ include = "src/stablethread", from = "." }]
+packages = [{ include = "stablethread" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
