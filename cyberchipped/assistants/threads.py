@@ -1,5 +1,4 @@
 import asyncio
-import time
 from typing import TYPE_CHECKING, Callable, Optional
 
 from openai.types.beta.threads import ThreadMessage
