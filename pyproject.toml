@@ -45,8 +45,8 @@ tests = [
 ]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=45"]
+build-backend = "setuptools.build_meta"
 
 # pytest configuration
 [tool.pytest.ini_options]
