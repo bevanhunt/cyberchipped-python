@@ -136,22 +136,28 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
             # Set a timeout of 25 seconds for the run
             await asyncio.wait_for(self._run_loop(), timeout=25)
         except asyncio.TimeoutError:
-            logger.debug(
-                "`asyncio.TimeoutError` raised; ending run due to timeout.")
-            cancel_response = await client.beta.threads.runs.cancel(
-                run_id=self.run.id, thread_id=self.thread.id
-            )
-            logger.debug(f"Cancel response: {cancel_response}")
-            self.data = "Run cancelled due to timeout."
+            logger.debug("`asyncio.TimeoutError` raised; ending run due to timeout.")
+            # Check if the run is completed
+            if self.run.status != "completed":
+                cancel_response = await client.beta.threads.runs.cancel(
+                    run_id=self.run.id, thread_id=self.thread.id
+                )
+                logger.debug(f"Cancel response: {cancel_response}")
+                self.data = "Run cancelled due to timeout."
+            else:
+                logger.debug("Run already completed; no need to cancel.")
             await self.refresh_async()
         except CancelRun as exc:
-            logger.debug(
-                f"`CancelRun` raised; ending run with data: {exc.data}")
-            cancel_response = await client.beta.threads.runs.cancel(
-                run_id=self.run.id, thread_id=self.thread.id
-            )
-            logger.debug(f"Cancel response: {cancel_response}")
-            self.data = exc.data
+            logger.debug(f"`CancelRun` raised; ending run with data: {exc.data}")
+            # Check if the run is completed
+            if self.run.status != "completed":
+                cancel_response = await client.beta.threads.runs.cancel(
+                    run_id=self.run.id, thread_id=self.thread.id
+                )
+                logger.debug(f"Cancel response: {cancel_response}")
+                self.data = exc.data
+            else:
+                logger.debug("Run already completed; no need to cancel.")
             await self.refresh_async()
 
         if self.run.status == "failed":
