@@ -119,6 +119,20 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
         run = Run(assistant=assistant, thread=self, **run_kwargs)
         return await run.run_async()
 
+    @expose_sync_method("cancel_run")
+    async def cancel_run_async(
+        self,
+        assistant: "Assistant",
+        **run_kwargs,
+    ) -> "Run":
+        """
+        Cancels the run of this thread with the provided assistant.
+        """
+        from cyberchipped.assistants.runs import Run
+
+        run = Run(assistant=assistant, thread=self, **run_kwargs)
+        return await run.cancel_async()
+
 
 class ThreadMonitor(BaseModel, ExposeSyncMethodsMixin):
     thread_id: str
