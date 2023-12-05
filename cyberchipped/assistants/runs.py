@@ -133,48 +133,23 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
         )
 
         try:
-            # Set a timeout of 25 seconds for the run
-            await asyncio.wait_for(self._run_loop(), timeout=25)
-        except asyncio.TimeoutError:
-            logger.debug("`asyncio.TimeoutError` raised; ending run due to timeout.")
-            # Check if the run is completed
-            if self.run.status != "completed":
-                cancel_response = await client.beta.threads.runs.cancel(
-                    run_id=self.run.id, thread_id=self.thread.id
-                )
-                logger.debug(f"Cancel response: {cancel_response}")
-                self.data = "Run cancelled due to timeout."
-            else:
-                logger.debug("Run already completed; no need to cancel.")
-            await self.refresh_async()
+            while self.run.status in ("queued", "in_progress", "requires_action"):
+                if self.run.status == "requires_action":
+                    await self._handle_step_requires_action()
+                await asyncio.sleep(0.1)
+                await self.refresh_async()
         except CancelRun as exc:
             logger.debug(f"`CancelRun` raised; ending run with data: {exc.data}")
-            # Check if the run is completed
-            if self.run.status != "completed":
-                cancel_response = await client.beta.threads.runs.cancel(
-                    run_id=self.run.id, thread_id=self.thread.id
-                )
-                logger.debug(f"Cancel response: {cancel_response}")
-                self.data = exc.data
-            else:
-                logger.debug("Run already completed; no need to cancel.")
+            await client.beta.threads.runs.cancel(
+                run_id=self.run.id, thread_id=self.thread.id
+            )
+            self.data = exc.data
             await self.refresh_async()
 
         if self.run.status == "failed":
             logger.debug(f"Run failed. Last error was: {self.run.last_error}")
 
         return self
-
-    async def _run_loop(self):
-        while self.run.status in ("queued", "in_progress", "requires_action"):
-            if self.run.status == "requires_action":
-                await self._handle_step_requires_action()
-            await asyncio.sleep(0.1)
-            await self.refresh_async()
-            # Check for cancellation
-            if asyncio.current_task().cancelled():
-                raise asyncio.CancelledError()
-
 
 class RunMonitor(BaseModel):
     run_id: str
