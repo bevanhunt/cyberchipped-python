@@ -2,12 +2,14 @@
 
 ![PyPI - Version](https://img.shields.io/pypi/v/cyberchipped)
 
+![CyberChipped Logo](https://cyberchipped.com/375.png)
+
 ## Intro
-CyberChipped enables building powerful AI apps by providing four abstractions.
+CyberChipped enables building powerful AI apps fast by providing four core abstractions.
 
 These abstractions are the Assistant and 3 helpers: Function, Model, and Classifier.
 
-Building an AI Assistant with multiple tools and helpers is doable in minimal lines of code.
+Building an OpenAI Assistant with multiple tools and helpers is doable in minimal lines of code.
 
 CyberChipped powers the most feature-rich AI Companion - [CometHeart](https://cometheart.com)!
 
@@ -24,9 +26,9 @@ import cyberchipped
 cyberchipped.settings.openai.api_key = "YOUR_OPENAI_API_KEY"
 ```
 
-## Abstractions
+## Four Core Abstractions
 
-## Assistant
+### Assistant
 ```python
 from cyberchipped.assistants import Assistant
 from cyberchipped.assistants.threads import Thread

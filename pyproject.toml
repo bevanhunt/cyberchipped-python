@@ -1,11 +1,12 @@
 [tool.poetry]
 name = "cyberchipped"
-version = "0.1.0"
-description = "OpenAI Assistants made easy"
+version = "0.1.1"
+description = "Build AI Apps Fast"
 authors = ["Bevan Hunt <bevan@bevanhunt.com>"]
 license = "Apache-2.0"
 readme = "README.md"
-homepage = "https://github.com/bevanhunt/cyberchipped"
+homepage = "https://cyberchipped.com"
+repository = "https://github.com/bevanhunt/cyberchipped"
 keywords = ["ai", "openai"]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
