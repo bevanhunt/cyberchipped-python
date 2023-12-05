@@ -165,6 +165,9 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
                 await self._handle_step_requires_action()
             await asyncio.sleep(0.1)
             await self.refresh_async()
+            # Check for cancellation
+            if asyncio.current_task().cancelled():
+                raise asyncio.CancelledError()
 
 
 class RunMonitor(BaseModel):
