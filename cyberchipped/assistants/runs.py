@@ -132,11 +132,15 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
         )
 
         try:
-            while self.run.status in ("queued", "in_progress", "requires_action"):
-                if self.run.status == "requires_action":
-                    await self._handle_step_requires_action()
-                await asyncio.sleep(0.1)
-                await self.refresh_async()
+            # Set a timeout of 35 seconds for the run
+            await asyncio.wait_for(self._run_loop(), timeout=35)
+        except asyncio.TimeoutError:
+            logger.debug("`asyncio.TimeoutError` raised; ending run due to timeout.")
+            await client.beta.threads.runs.cancel(
+                run_id=self.run.id, thread_id=self.thread.id
+            )
+            self.data = "Run cancelled due to timeout."
+            await self.refresh_async()
         except CancelRun as exc:
             logger.debug(f"`CancelRun` raised; ending run with data: {exc.data}")
             await client.beta.threads.runs.cancel(
@@ -150,6 +154,12 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
 
         return self
 
+    async def _run_loop(self):
+        while self.run.status in ("queued", "in_progress", "requires_action"):
+            if self.run.status == "requires_action":
+                await self._handle_step_requires_action()
+            await asyncio.sleep(0.1)
+            await self.refresh_async()
 
 class RunMonitor(BaseModel):
     run_id: str
