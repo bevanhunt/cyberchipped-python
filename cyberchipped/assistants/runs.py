@@ -102,7 +102,8 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
             instructions = self.instructions
 
         if self.additional_instructions is not None:
-            instructions = "\n\n".join([instructions, self.additional_instructions])
+            instructions = "\n\n".join(
+                [instructions, self.additional_instructions])
 
         return instructions
 
@@ -135,17 +136,21 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
             # Set a timeout of 35 seconds for the run
             await asyncio.wait_for(self._run_loop(), timeout=35)
         except asyncio.TimeoutError:
-            logger.debug("`asyncio.TimeoutError` raised; ending run due to timeout.")
-            await client.beta.threads.runs.cancel(
+            logger.debug(
+                "`asyncio.TimeoutError` raised; ending run due to timeout.")
+            cancel_response = await client.beta.threads.runs.cancel(
                 run_id=self.run.id, thread_id=self.thread.id
             )
+            logger.debug(f"Cancel response: {cancel_response}")
             self.data = "Run cancelled due to timeout."
             await self.refresh_async()
         except CancelRun as exc:
-            logger.debug(f"`CancelRun` raised; ending run with data: {exc.data}")
-            await client.beta.threads.runs.cancel(
+            logger.debug(
+                f"`CancelRun` raised; ending run with data: {exc.data}")
+            cancel_response = await client.beta.threads.runs.cancel(
                 run_id=self.run.id, thread_id=self.thread.id
             )
+            logger.debug(f"Cancel response: {cancel_response}")
             self.data = exc.data
             await self.refresh_async()
 
@@ -160,6 +165,7 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
                 await self._handle_step_requires_action()
             await asyncio.sleep(0.1)
             await self.refresh_async()
+
 
 class RunMonitor(BaseModel):
     run_id: str
