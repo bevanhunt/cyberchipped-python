@@ -145,12 +145,12 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
                 self.data = "Run already completed; no need to cancel."
             await self.refresh_async()
 
-    def _run_loop(self):
+    async def _run_loop(self):
         while self.run.status in ("queued", "in_progress", "requires_action"):
             if self.run.status == "requires_action":
-                yield from self._handle_step_requires_action()
-            yield from asyncio.sleep(0.1)
-            yield from self.refresh_async()
+                await self._handle_step_requires_action()
+            await asyncio.sleep(0.1)
+            await self.refresh_async()
 
 class RunMonitor(BaseModel):
     run_id: str
