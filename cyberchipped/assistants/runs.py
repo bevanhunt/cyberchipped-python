@@ -133,8 +133,8 @@ class Run(BaseModel, ExposeSyncMethodsMixin):
         )
 
         try:
-            # Set a timeout of 35 seconds for the run
-            await asyncio.wait_for(self._run_loop(), timeout=35)
+            # Set a timeout of 25 seconds for the run
+            await asyncio.wait_for(self._run_loop(), timeout=25)
         except asyncio.TimeoutError:
             logger.debug(
                 "`asyncio.TimeoutError` raised; ending run due to timeout.")
