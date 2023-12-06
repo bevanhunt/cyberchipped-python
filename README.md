@@ -44,7 +44,7 @@ with Assistant as ai:
     pprint_messages(messages)
     # prints 
     # USER: Hello World!
-    # ASSISTANT: Yes! Good morning planet Earth!)
+    # ASSISTANT: Yes! Good morning planet Earth!
 ```
 
 ### AI Function
