@@ -5,9 +5,9 @@
 ![CyberChipped Logo](https://cyberchipped.com/375.png)
 
 ## Intro
-CyberChipped enables building powerful AI apps fast by providing four core abstractions.
+CyberChipped enables building powerful AI apps fast by providing three core abstractions.
 
-These abstractions are the Assistant and 3 helpers: Function, Model, and Classifier.
+These abstractions are the Assistant and 2 helpers: Function and Model.
 
 Building an OpenAI Assistant with multiple tools and helpers is doable in minimal lines of code.
 
@@ -73,25 +73,6 @@ class Planet(BaseModel):
 planet = Planet("Mars is a great place to visit!")
 print(planet.name)
 # prints "Mars"
-```
-
-### AI Classifier
-```python
-from cyberchipped import ai_classifier
-from enum import Enum
-
-@ai_classifier
-class WhichGalaxy(Enum):
-    """Picks the name of the galaxy a planet is located in."""
-
-    MILKY_WAY = "MILKY WAY"
-    ANDROMEDA = "ANDROMEDA"
-    PINWHEEL = "PINWHEEL"
-    OTHER = "OTHER"
-    NONE = "NONE"
-
-WhichGalaxy("Earth")
-# WhichGalaxy.MILKY_WAY
 ```
 
 ## Source
