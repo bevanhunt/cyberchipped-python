@@ -7,7 +7,7 @@
 ## Introduction
 CyberChipped enables building powerful AI apps fast by providing three core abstractions.
 
-These abstractions are the Assistant and 2 helpers: Function and Model.
+These abstractions are the OpenAI Assistant and 2 helpers: AI Function and AI Model.
 
 Building an OpenAI Assistant with multiple tools and helpers is doable in minimal lines of code.
 
@@ -28,7 +28,7 @@ cyberchipped.settings.openai.api_key = "YOUR_OPENAI_API_KEY"
 
 ## Abstractions
 
-### Assistant
+### OpenAI Assistant
 ```python
 from cyberchipped.assistants import Assistant
 from cyberchipped.assistants.threads import Thread
