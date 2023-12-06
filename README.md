@@ -4,7 +4,7 @@
 
 ![CyberChipped Logo](https://cyberchipped.com/375.png)
 
-## Intro
+## Introduction
 CyberChipped enables building powerful AI apps fast by providing three core abstractions.
 
 These abstractions are the Assistant and 2 helpers: Function and Model.
