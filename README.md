@@ -26,7 +26,7 @@ import cyberchipped
 cyberchipped.settings.openai.api_key = "YOUR_OPENAI_API_KEY"
 ```
 
-## Four Core Abstractions
+## Abstractions
 
 ### Assistant
 ```python
