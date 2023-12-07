@@ -1,4 +1,4 @@
-## Basic Assistant Example
+## Tool Assistant Example
 
 ### Setup
 Rename .env.setup to .env with your OPENAI_API_KEY
