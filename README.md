@@ -35,7 +35,7 @@ from cyberchipped.assistants import Assistant
 
 with Assistant() as ai:
     print(ai.say("Hello World!"))
-    # prints: Hello there! How can I assist you today?
+    # prints: "Hello there! How can I assist you today?"
 ```
 
 ### AI Function
