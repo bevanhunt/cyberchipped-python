@@ -67,10 +67,10 @@ print(planet.name)
 ```
 
 ## Note
-CyberChipped will save a sqlite database to your working directory in order to persist the default thread for the assistant_name and user_id (user_id is optional).
+CyberChipped will save a sqlite3 database to your working directory in order to persist the default thread for the assistant_name and user_id (user_id is optional).
 
 ## Source
-This is a hard fork of Marvin pre-release
+This is a hard fork of [Marvin](https://askmarvin.ai) pre-release
 
 ## Platform Support
 Mac and Linux
