@@ -35,7 +35,7 @@ from cyberchipped.assistants.threads import Thread
 from cyberchipped.assistants.formatting import pprint_messages
 
 
-with Assistant as ai:
+with Assistant() as ai:
     thread = Thread()
     thread.create()
     thread.add("Hello World!")
