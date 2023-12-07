@@ -4,9 +4,7 @@
 Rename .env.setup to .env with your OPENAI_API_KEY
 
 ### Install
-    pipenv --python 3.11.6
-
-    pipenv install
+    pipenv --python 3.11.6 && pipenv install
 
 ### Run
 In one terminal run: ```bash ./dev.sh```
