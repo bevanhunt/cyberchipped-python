@@ -37,8 +37,7 @@ from cyberchipped.assistants import Assistant
 
 with Assistant() as ai:
     print(ai.say("Hello World!"))
-    # prints 
-    # Yes! Good morning planet Earth!
+    # prints: Yes! Good morning planet Earth!
 ```
 
 ### AI Function
@@ -50,7 +49,7 @@ def echo(text: str) -> str:
     """You return `text`."""
 
 print(echo("Hello World!"))
-# prints "Hello World!"
+# prints: "Hello World!"
 
 ```
 
@@ -66,7 +65,7 @@ class Planet(BaseModel):
 
 planet = Planet("Mars is a great place to visit!")
 print(planet.name)
-# prints "Mars"
+# prints: "Mars"
 ```
 
 ## Source
