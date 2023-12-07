@@ -11,13 +11,10 @@ cyberchipped.settings.openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = fastapi.FastAPI()
 
+
 class Body(BaseModel):
     text: str
     user_id: str
-
-
-def echo(text: str) -> str:
-    return text
 
 
 def main(text: str, user_id: str) -> str:
