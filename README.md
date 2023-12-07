@@ -67,7 +67,7 @@ print(planet.name)
 ```
 
 ## Note
-CyberChipped will save a sqlite3 database to your working directory in order to persist and manage threads.
+CyberChipped will save a sqlite3 database to your working directory in order to persist and manage OpenAI Assistant threads.
 
 ## Source
 This is a hard fork of [Marvin](https://askmarvin.ai) pre-release
