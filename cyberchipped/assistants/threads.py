@@ -132,7 +132,22 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
 
         run = Run(assistant=assistant, thread=self, **run_kwargs)
         return await run.cancel_async()
+    
+    @expose_sync_method("say")
+    async def say_async(self, text: str, assistant: "Assistant") -> str:
+        """
+        Wraps the full process of adding a message to the thread and running it
+        """
+        from cyberchipped.assistants.runs import Run
 
+        await self.add_async(text)
+        run = Run(assistant=assistant, thread=self)
+        await run.run_async()
+        messages = await self.get_messages_async()
+        last_message = messages[-1]
+        ai_message = last_message.content[0].text.value
+        return ai_message
+    
 
 class ThreadMonitor(BaseModel, ExposeSyncMethodsMixin):
     thread_id: str

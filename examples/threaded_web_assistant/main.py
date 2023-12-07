@@ -1,6 +1,5 @@
 import cyberchipped
 from cyberchipped.assistants import Assistant
-from cyberchipped.assistants.threads import Thread
 from dotenv import load_dotenv
 import os
 import fastapi
@@ -14,25 +13,19 @@ app = fastapi.FastAPI()
 
 class Body(BaseModel):
     text: str
-    thread_id: str
+    user_id: str
 
 
 def echo(text: str) -> str:
     return text
 
 
-def main(text: str, thread_id: str) -> str:
-    with Assistant(tools=[echo], instructions="""You echo the input from `text` using the echo tool.""") as ai:
-        thread = Thread(id=thread_id)
-        thread.create()
-        thread.run(ai)
-        messages = thread.get_messages()
-        last_message = messages[-1]
-        last_message = last_message.content[0].text.value
-        return last_message
+def main(text: str, user_id: str) -> str:
+    with Assistant() as ai:
+        return ai.say(text, thread_id=user_id)
 
 
 @app.post("/")
 def post(body: Body):
-    ai_message = main(body.text, body.thread_id)
+    ai_message = main(body.text, body.user_id)
     return {"ai_message": ai_message}

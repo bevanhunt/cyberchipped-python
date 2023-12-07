@@ -11,6 +11,8 @@ These abstractions are the OpenAI Assistant, AI Function, and AI Model.
 
 The key selling point of this library is to handle the OpenAI Assistant thread run system automatically.
 
+Build a Hello World AI app in two lines of code!
+
 CyberChipped powers the most feature-rich AI Companion - [CometHeart](https://cometheart.com)!
 
 ## Install
@@ -31,17 +33,11 @@ cyberchipped.settings.openai.api_key = "YOUR_OPENAI_API_KEY"
 ### OpenAI Assistant
 ```python
 from cyberchipped.assistants import Assistant
-from cyberchipped.assistants.threads import Thread
 from cyberchipped.assistants.formatting import pprint_messages
 
 
 with Assistant() as ai:
-    thread = Thread()
-    thread.create()
-    thread.add("Hello World!")
-    thread.run(ai)
-    messages = thread.get_messages()
-    pprint_messages(messages)
+    pprint_messages(ai.say("Hello World!"))
     # prints 
     # USER: Hello World!
     # ASSISTANT: Yes! Good morning planet Earth!

@@ -78,6 +78,16 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
         client = get_client()
         await client.beta.assistants.delete(assistant_id=self.id)
         self.id = None
+    
+    @expose_sync_method("say")
+    async def say_async(self, text: str, thread_id: str = "default") -> "Run":
+        try:
+            thread = Thread(id=thread_id)
+            thread = await Thread.get_async()
+        except Exception:
+            thread = Thread(id=thread_id)
+            await thread.create_async()
+        return await thread.say_async(text, assistant=self)
 
     @classmethod
     def load(cls, assistant_id: str):
