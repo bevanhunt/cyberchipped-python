@@ -19,7 +19,7 @@ class Body(BaseModel):
 
 def main(text: str, user_id: str) -> str:
     with Assistant() as ai:
-        return ai.say(text, thread_id=user_id)
+        return ai.say(text, user_id=user_id)
 
 
 @app.post("/")

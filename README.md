@@ -66,6 +66,9 @@ print(planet.name)
 # prints: "Mars"
 ```
 
+## Note
+CyberChipped will save a sqlite database to your working directory in order to persist the default thread for the assistant_name and user_id (user_id is optional).
+
 ## Source
 This is a hard fork of Marvin pre-release
 

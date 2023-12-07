@@ -141,6 +141,12 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
         from cyberchipped.assistants.runs import Run
 
         await self.add_async(text)
+        
+        try:
+            await self.cancel_run_async(assistant=assistant)
+        except:
+            pass
+
         run = Run(assistant=assistant, thread=self)
         await run.run_async()
         messages = await self.get_messages_async()

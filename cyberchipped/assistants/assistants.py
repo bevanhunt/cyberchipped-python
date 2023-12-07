@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
+import sqlite3
 import cyberchipped.utilities.tools
 from cyberchipped.requests import Tool
 from cyberchipped.tools.assistants import AssistantTools
@@ -59,8 +60,6 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
 
     @expose_sync_method("create")
     async def create_async(self):
-        if self.id is not None:
-            raise ValueError("Assistant has already been created.")
         client = get_client()
         response = await client.beta.assistants.create(
             **self.model_dump(
@@ -78,16 +77,49 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
         client = get_client()
         await client.beta.assistants.delete(assistant_id=self.id)
         self.id = None
-    
+
+    @staticmethod
+    def get_db_connection():
+        conn = sqlite3.connect('cyberchipped.db')
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS threads
+            (id TEXT PRIMARY KEY, assistant_name TEXT, user_id TEXT)
+        ''')
+        return conn, c
+
     @expose_sync_method("say")
-    async def say_async(self, text: str, thread_id: str = "default") -> "Run":
-        try:
-            thread = Thread(id=thread_id)
-            thread = await Thread.get_async()
-        except Exception:
-            thread = Thread(id=thread_id)
+    async def say_async(self, text: str, user_id=None) -> "Run":
+        conn, c = Assistant.get_db_connection()
+        if user_id is None:
+            c.execute(
+                'SELECT id FROM threads WHERE assistant_name = ? LIMIT 1', (self.name,))
+        else:
+            c.execute(
+                'SELECT id FROM threads WHERE user_id = ? AND assistant_name = ? LIMIT 1', (user_id, self.name)
+            )
+
+        result = c.fetchone()
+
+        if result is None:
+            thread = Thread()
             await thread.create_async()
+            if not user_id:
+                c.execute('INSERT INTO threads VALUES (?, ?)',
+                        (thread.id, self.name))
+            else:
+                c.execute('INSERT INTO threads VALUES (?, ?, ?)',
+                        (thread.id, self.name, user_id))
+            conn.commit()
+        else:
+            thread_id = result[0]
+            thread = Thread(id=thread_id)
+            await thread.get_async()
+
+        conn.close()
+
         return await thread.say_async(text, assistant=self)
+
 
     @classmethod
     def load(cls, assistant_id: str):
