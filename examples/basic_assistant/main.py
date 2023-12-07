@@ -10,7 +10,7 @@ cyberchipped.settings.openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def main():
     with Assistant() as ai:
-        print(ai.say("How many dogs do I have?"))
+        print(ai.say("Hello world!"))
 
 
 if __name__ == "__main__":
