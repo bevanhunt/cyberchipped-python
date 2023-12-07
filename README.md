@@ -33,14 +33,12 @@ cyberchipped.settings.openai.api_key = "YOUR_OPENAI_API_KEY"
 ### OpenAI Assistant
 ```python
 from cyberchipped.assistants import Assistant
-from cyberchipped.assistants.formatting import pprint_messages
 
 
 with Assistant() as ai:
-    pprint_messages(ai.say("Hello World!"))
+    print(ai.say("Hello World!"))
     # prints 
-    # USER: Hello World!
-    # ASSISTANT: Yes! Good morning planet Earth!
+    # Yes! Good morning planet Earth!
 ```
 
 ### AI Function

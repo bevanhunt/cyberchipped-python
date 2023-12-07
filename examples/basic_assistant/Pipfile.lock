@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "051fd2d22eb778eb265914da6e435be473648ebbfdc439dbfed6265ab6de016a"
+            "sha256": "0da2e954adff72230fc08582f2488712b50644d6d3cb28c40857433300b452dc"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -138,13 +138,8 @@
             "version": "==3.3.2"
         },
         "cyberchipped": {
-            "hashes": [
-                "sha256:5a92d381da14cca323b2b8294eb4c4cb00e8f18310670cb03924951037683f02",
-                "sha256:e887d560750464735b19f37c749d0b481ea9226f4832f20f3ddb2f4b1e9f9b15"
-            ],
-            "index": "pypi",
-            "markers": "python_version >= '3.11' and python_version < '4.0'",
-            "version": "==0.1.9"
+            "file": "../..",
+            "markers": "python_version >= '3.11' and python_version < '4.0'"
         },
         "distro": {
             "hashes": [

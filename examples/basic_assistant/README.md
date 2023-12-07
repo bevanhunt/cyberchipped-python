@@ -10,5 +10,5 @@ Rename .env.setup to .env with your OPENAI_API_KEY
     pipenv run python main.py
 
 ### Output
-![Screenshot](./screenshot.png)
+    Hello there! How can I assist you today?
 
