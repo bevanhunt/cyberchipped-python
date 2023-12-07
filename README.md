@@ -9,9 +9,7 @@ CyberChipped enables building powerful AI apps fast by providing three core abst
 
 These abstractions are the OpenAI Assistant, AI Function, and AI Model.
 
-The key selling point of this library is to handle the OpenAI Assistant thread run system automatically.
-
-Build a Hello World AI app in two lines of code!
+The key selling point of this library is to build an OpenAI Assistant in two lines of code!
 
 CyberChipped powers the most feature-rich AI Companion - [CometHeart](https://cometheart.com)!
 
