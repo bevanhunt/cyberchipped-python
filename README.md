@@ -76,4 +76,4 @@ This is a hard fork of [Marvin](https://askmarvin.ai) pre-release
 Mac and Linux
 
 ## Requirements
-Python 3.11
+Python >= 3.11

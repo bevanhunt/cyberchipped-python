@@ -105,8 +105,8 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
             thread = Thread()
             await thread.create_async()
             if not user_id:
-                c.execute('INSERT INTO threads VALUES (?, ?)',
-                        (thread.id, self.name))
+                c.execute('INSERT INTO threads VALUES (?, ?, ?)',
+                        (thread.id, self.name, ""))
             else:
                 c.execute('INSERT INTO threads VALUES (?, ?, ?)',
                         (thread.id, self.name, user_id))
