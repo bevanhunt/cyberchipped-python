@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -72,8 +72,7 @@ class AssistantSettings(ModelSettings):
 
 
 class ChatSettings(Settings):
-    completions: ChatCompletionSettings = Field(
-        default_factory=ChatCompletionSettings)
+    completions: ChatCompletionSettings = Field(default_factory=ChatCompletionSettings)
 
 
 class OpenAISettings(Settings):
