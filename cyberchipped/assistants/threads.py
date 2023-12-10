@@ -41,8 +41,7 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
         Creates a thread.
         """
         if messages is not None:
-            messages = [{"role": "user", "content": message}
-                        for message in messages]
+            messages = [{"role": "user", "content": message} for message in messages]
         client = get_client()
         response = await client.beta.threads.create(messages=messages)
         self.id = response.id
@@ -132,7 +131,7 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
 
         run = Run(assistant=assistant, thread=self, **run_kwargs)
         return await run.cancel_async()
-    
+
     @expose_sync_method("say")
     async def say_async(self, text: str, assistant: "Assistant") -> str:
         """
@@ -141,10 +140,10 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
         from cyberchipped.assistants.runs import Run
 
         await self.add_async(text)
-        
+
         try:
             await self.cancel_run_async(assistant=assistant)
-        except:
+        except Exception:
             pass
 
         run = Run(assistant=assistant, thread=self)
@@ -153,7 +152,7 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
         last_message = messages[-1]
         ai_message = last_message.content[0].text.value
         return ai_message
-    
+
 
 class ThreadMonitor(BaseModel, ExposeSyncMethodsMixin):
     thread_id: str
@@ -187,8 +186,7 @@ class ThreadMonitor(BaseModel, ExposeSyncMethodsMixin):
             try:
                 await self.run_once_async()
             except KeyboardInterrupt:
-                logger.debug(
-                    "Keyboard interrupt received; exiting thread monitor.")
+                logger.debug("Keyboard interrupt received; exiting thread monitor.")
                 break
             except Exception as exc:
                 logger.error(f"Error refreshing thread: {exc}")

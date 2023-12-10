@@ -1,4 +1,3 @@
-from regex import B
 from .ai_function import ai_fn, AIFunction
 from .ai_model import ai_model
 from .prompt import prompt_fn, PromptFunction
