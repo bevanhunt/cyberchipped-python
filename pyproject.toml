@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cyberchipped"
-version = "0.2.2"
+version = "0.2.3"
 description = "Build AI Apps Fast"
 authors = ["Bevan Hunt <bevan@bevanhunt.com>"]
 license = "Apache-2.0"
@@ -14,6 +14,9 @@ classifiers = [
 ]
 packages = [{ include = "cyberchipped" }]
 
+[tool.pytest.ini-options]
+python_paths = [".", "examples"]
+
 [tool.poetry.dependencies]
 python = ">=3.11"
 jinja2 = ">=3.1.2"
@@ -22,6 +25,11 @@ pydantic = ">=2.4.2"
 pydantic_settings = "*"
 rich = ">=12"
 tiktoken = ">=0.4.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+pytest-watch = "*"
+coverage = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

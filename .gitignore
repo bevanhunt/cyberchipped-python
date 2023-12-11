@@ -148,3 +148,6 @@ cython_debug/
 
 # Chroma
 .chroma/
+
+# test db
+cyberchipped.db
