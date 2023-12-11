@@ -1,6 +1,7 @@
 # CyberChipped
 
 ![PyPI - Version](https://img.shields.io/pypi/v/cyberchipped)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/bevanhunt/cyberchipped/build.yml)
 
 ![CyberChipped Logo](https://cyberchipped.com/375.png)
 
