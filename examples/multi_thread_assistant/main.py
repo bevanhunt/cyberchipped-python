@@ -1,5 +1,4 @@
 from cyberchipped.assistants import Assistant
-from dotenv import load_dotenv
 
 
 def main() -> int:
