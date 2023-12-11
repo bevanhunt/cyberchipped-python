@@ -100,7 +100,6 @@ class AssistantMessage(BaseMessage):
     created_at: int
     assistant_id: Optional[str] = None
     run_id: Optional[str] = None
-    file_ids: list[str] = []
     metadata: dict[str, Any] = {}
 
 

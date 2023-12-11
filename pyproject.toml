@@ -15,7 +15,7 @@ classifiers = [
 packages = [{ include = "cyberchipped" }]
 
 [tool.pytest.ini-options]
-python_paths = [".", "examples"]
+python_paths = [".", "tests"]
 
 [tool.poetry.dependencies]
 python = ">=3.11"

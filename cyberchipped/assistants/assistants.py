@@ -28,7 +28,6 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
     model: str = "gpt-3.5-turbo-1106"
     instructions: Optional[str] = Field(None, repr=False)
     tools: list[AssistantTools] = []
-    file_ids: list[str] = []
     metadata: dict[str, str] = {}
 
     def get_tools(self) -> list[AssistantTools]:
@@ -62,9 +61,7 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
     async def create_async(self):
         client = get_client()
         response = await client.beta.assistants.create(
-            **self.model_dump(
-                include={"name", "model", "metadata", "file_ids", "metadata"}
-            ),
+            **self.model_dump(include={"name", "model", "metadata", "metadata"}),
             tools=[tool.model_dump() for tool in self.get_tools()],
             instructions=self.get_instructions(),
         )
@@ -80,12 +77,14 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
 
     @staticmethod
     def get_db_connection():
-        conn = sqlite3.connect('cyberchipped.db')
+        conn = sqlite3.connect("cyberchipped.db")
         c = conn.cursor()
-        c.execute('''
+        c.execute(
+            """
             CREATE TABLE IF NOT EXISTS threads
             (id TEXT PRIMARY KEY, assistant_name TEXT, user_id TEXT)
-        ''')
+        """
+        )
         return conn, c
 
     @expose_sync_method("say")
@@ -93,10 +92,12 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
         conn, c = Assistant.get_db_connection()
         if user_id is None:
             c.execute(
-                'SELECT id FROM threads WHERE assistant_name = ? LIMIT 1', (self.name,))
+                "SELECT id FROM threads WHERE assistant_name = ? LIMIT 1", (self.name,)
+            )
         else:
             c.execute(
-                'SELECT id FROM threads WHERE user_id = ? AND assistant_name = ? LIMIT 1', (user_id, self.name)
+                "SELECT id FROM threads WHERE user_id = ? AND assistant_name = ? LIMIT 1",
+                (user_id, self.name),
             )
 
         result = c.fetchone()
@@ -105,11 +106,14 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
             thread = Thread()
             await thread.create_async()
             if not user_id:
-                c.execute('INSERT INTO threads VALUES (?, ?, ?)',
-                        (thread.id, self.name, ""))
+                c.execute(
+                    "INSERT INTO threads VALUES (?, ?, ?)", (thread.id, self.name, "")
+                )
             else:
-                c.execute('INSERT INTO threads VALUES (?, ?, ?)',
-                        (thread.id, self.name, user_id))
+                c.execute(
+                    "INSERT INTO threads VALUES (?, ?, ?)",
+                    (thread.id, self.name, user_id),
+                )
             conn.commit()
         else:
             thread_id = result[0]
@@ -120,6 +124,21 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
 
         return await thread.say_async(text, assistant=self)
 
+    @expose_sync_method("get_default_thread")
+    async def get_default_thread_async(self) -> "Thread":
+        conn, c = Assistant.get_db_connection()
+        c.execute(
+            "SELECT id FROM threads WHERE assistant_name = ? LIMIT 1", (self.name,)
+        )
+        result = c.fetchone()
+
+        thread_id = result[0]
+        thread = Thread(id=thread_id)
+        await thread.get_async()
+
+        conn.close()
+
+        return thread
 
     @classmethod
     def load(cls, assistant_id: str):

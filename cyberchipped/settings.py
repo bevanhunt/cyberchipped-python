@@ -1,5 +1,4 @@
 import os
-from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from dotenv import load_dotenv
@@ -138,40 +137,3 @@ class Settings(Settings):
 
 
 settings = Settings()
-
-
-@contextmanager
-def temporary_settings(**kwargs: Any):
-    """
-    Temporarily override cyberchipped setting values. This will _not_ mutate values that have
-    been already been accessed at module load time.
-
-    This function should only be used for testing.
-    """
-    old_env = os.environ.copy()
-    old_settings = settings.model_copy()
-
-    try:
-        for setting in kwargs:
-            value = kwargs.get(setting)
-            if value is not None:
-                os.environ[setting] = str(value)
-            else:
-                os.environ.pop(setting, None)
-
-        new_settings = Settings()
-
-        for field in settings.model_fields:
-            object.__setattr__(settings, field, getattr(new_settings, field))
-
-        yield settings
-    finally:
-        for setting in kwargs:
-            value = old_env.get(setting)
-            if value is not None:
-                os.environ[setting] = value
-            else:
-                os.environ.pop(setting, None)
-
-        for field in settings.model_fields:
-            object.__setattr__(settings, field, getattr(old_settings, field))
