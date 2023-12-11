@@ -1,4 +1,5 @@
 import asyncio
+import os
 from functools import lru_cache
 from typing import Optional
 
@@ -8,9 +9,13 @@ from openai import AsyncClient
 def get_client() -> AsyncClient:
     from cyberchipped import settings
 
-    api_key: Optional[str] = (
-        settings.openai.api_key.get_secret_value() if settings.openai.api_key else None
-    )
+    api_key: Optional[str] = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        api_key = (
+            settings.openai.api_key.get_secret_value()
+            if settings.openai.api_key
+            else None
+        )
     organization: Optional[str] = settings.openai.organization
     return _get_client_memoized(
         api_key=api_key, organization=organization, loop=asyncio.get_event_loop()

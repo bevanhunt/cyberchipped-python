@@ -1,13 +1,6 @@
-import cyberchipped
 from cyberchipped.assistants import Assistant
-from dotenv import load_dotenv
-import os
 import fastapi
 from pydantic import BaseModel
-
-load_dotenv()
-
-cyberchipped.settings.openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = fastapi.FastAPI()
 

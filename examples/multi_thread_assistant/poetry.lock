@@ -154,7 +154,7 @@ files = [
 
 [[package]]
 name = "cyberchipped"
-version = "0.2.2"
+version = "0.2.3"
 description = "Build AI Apps Fast"
 optional = false
 python-versions = ">=3.11"
@@ -166,6 +166,7 @@ jinja2 = ">=3.1.2"
 openai = ">=1.1.0"
 pydantic = ">=2.4.2"
 pydantic_settings = "*"
+python-dotenv = ">=1.0.0"
 rich = ">=12"
 tiktoken = ">=0.4.0"
 
@@ -946,4 +947,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "37db048c977f1697ea9d85f504e26e5cb6f8b362f9264b85de39f6791af19bc8"
+content-hash = "33dd0adaab9d67d064c96701b7990c919ef1276f1685729eb16bc21f8bd57c95"

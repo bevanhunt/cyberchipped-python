@@ -6,6 +6,8 @@ authors = ["Your Name <your.email@example.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.12"
+fastapi = "*"
+uvicorn = "*"
 python-dotenv = "*"
 cyberchipped = {path = "../..", develop = true}
 

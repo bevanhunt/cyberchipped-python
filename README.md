@@ -22,10 +22,9 @@ pip install cyberchipped
 ```
 
 ## Setup
-```python
-import cyberchipped
-
-cyberchipped.settings.openai.api_key = "YOUR_OPENAI_API_KEY"
+Create a .env file in your project root with this key in it:
+```bash
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 ```
 
 ## Abstractions

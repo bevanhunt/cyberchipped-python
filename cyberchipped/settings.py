@@ -2,6 +2,8 @@ import os
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+from dotenv import load_dotenv
+
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,11 +11,11 @@ if TYPE_CHECKING:
     from openai import AsyncClient, Client
     from openai.types.chat import ChatCompletion
 
+load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="cyberchipped_",
-        env_file="~/.cyberchipped/.env",
         extra="allow",
         arbitrary_types_allowed=True,
     )
@@ -79,7 +81,7 @@ class OpenAISettings(Settings):
     model_config = SettingsConfigDict(env_prefix="_openai_")
 
     api_key: Optional[SecretStr] = Field(
-        default=None,
+        default=os.getenv("OPENAI_API_KEY"),
         description="Your OpenAI API key.",
     )
 
