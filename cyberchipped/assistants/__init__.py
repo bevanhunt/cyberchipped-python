@@ -1,3 +1,4 @@
+# ruff: noqa
 from .runs import Run
 from .threads import Thread, ThreadMonitor
 from .assistants import Assistant
