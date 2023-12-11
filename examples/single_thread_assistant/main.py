@@ -8,10 +8,10 @@ load_dotenv()
 cyberchipped.settings.openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
-def main():
+def main() -> int:
     with Assistant() as ai:
-        print(ai.say("Repeat: Hello there! How can I assist you today?"))
+        return ai.say("Repeat: Hello there! How can I assist you today?")
 
 
 if __name__ == "__main__":
-    main()
+    print(main())
