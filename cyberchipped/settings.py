@@ -46,7 +46,7 @@ class ModelSettings(Settings):
 
 class ChatCompletionSettings(ModelSettings):
     model: str = Field(
-        default="gpt-4-1106-preview",
+        default="gpt-3.5-turbo-1106",
         description="The default chat model to use.",
     )
 
