@@ -46,7 +46,7 @@ class ModelSettings(Settings):
 
 class ChatCompletionSettings(ModelSettings):
     model: str = Field(
-        default="gpt-3.5-turbo-1106",
+        default="gpt-4-1106-preview",
         description="The default chat model to use.",
     )
 
@@ -67,7 +67,7 @@ class ChatCompletionSettings(ModelSettings):
 
 class AssistantSettings(ModelSettings):
     model: str = Field(
-        default="gpt-3.5-turbo-1106",
+        default="gpt-4-1106-preview",
         description="The default assistant model to use.",
     )
 
