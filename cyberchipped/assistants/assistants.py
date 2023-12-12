@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
-import sqlite3
 import cyberchipped.utilities.tools
 from cyberchipped.requests import Tool
 from cyberchipped.tools.assistants import AssistantTools
@@ -15,6 +14,11 @@ from cyberchipped.utilities.logging import get_logger
 from cyberchipped.utilities.openai import get_client
 
 from .threads import Thread
+
+from dotenv import load_dotenv
+import os
+
+load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))
 
 if TYPE_CHECKING:
     from .runs import Run
@@ -77,6 +81,8 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
 
     @staticmethod
     def get_db_connection():
+        import sqlite3
+
         conn = sqlite3.connect("cyberchipped.db")
         c = conn.cursor()
         c.execute(
@@ -87,56 +93,102 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
         )
         return conn, c
 
+    @staticmethod
+    def get_mongo_connection():
+        from pymongo import MongoClient
+
+        client = MongoClient(os.getenv("MONGO_URL"))
+        db = client[os.getenv("MONGO_DB")][os.getenv("MONGO_COLLECTION")]
+        return db
+
+    @staticmethod
+    def should_use_mongo() -> bool:
+        return os.getenv("MONGO_URL") is not None
+
     @expose_sync_method("say")
     async def say_async(self, text: str, user_id=None) -> "Run":
-        conn, c = Assistant.get_db_connection()
-        if user_id is None:
-            c.execute(
-                "SELECT id FROM threads WHERE assistant_name = ? LIMIT 1", (self.name,)
-            )
+        if self.should_use_mongo():
+            db = self.get_mongo_connection()
+            if user_id is None:
+                thread = db.find_one({"assistant_name": self.name})
+            else:
+                thread = db.find_one({"user_id": user_id, "assistant_name": self.name})
+
+            if thread is None:
+                thread = Thread()
+                await thread.create_async()
+                if not user_id:
+                    db.insert_one(
+                        {"id": thread.id, "assistant_name": self.name, "user_id": ""}
+                    )
+                else:
+                    db.insert_one(
+                        {
+                            "id": thread.id,
+                            "assistant_name": self.name,
+                            "user_id": user_id,
+                        }
+                    )
+            else:
+                thread_id = thread["id"]
+                thread = Thread(id=thread_id)
+                await thread.get_async()
+
         else:
-            c.execute(
-                "SELECT id FROM threads WHERE user_id = ? AND assistant_name = ? LIMIT 1",
-                (user_id, self.name),
-            )
-
-        result = c.fetchone()
-
-        if result is None:
-            thread = Thread()
-            await thread.create_async()
-            if not user_id:
+            conn, c = self.get_db_connection()
+            if user_id is None:
                 c.execute(
-                    "INSERT INTO threads VALUES (?, ?, ?)", (thread.id, self.name, "")
+                    "SELECT id FROM threads WHERE assistant_name = ? LIMIT 1",
+                    (self.name,),
                 )
             else:
                 c.execute(
-                    "INSERT INTO threads VALUES (?, ?, ?)",
-                    (thread.id, self.name, user_id),
+                    "SELECT id FROM threads WHERE user_id = ? AND assistant_name = ? LIMIT 1",
+                    (user_id, self.name),
                 )
-            conn.commit()
-        else:
-            thread_id = result[0]
-            thread = Thread(id=thread_id)
-            await thread.get_async()
 
-        conn.close()
+            result = c.fetchone()
+
+            if result is None:
+                thread = Thread()
+                await thread.create_async()
+                if not user_id:
+                    c.execute(
+                        "INSERT INTO threads VALUES (?, ?, ?)",
+                        (thread.id, self.name, ""),
+                    )
+                else:
+                    c.execute(
+                        "INSERT INTO threads VALUES (?, ?, ?)",
+                        (thread.id, self.name, user_id),
+                    )
+                conn.commit()
+            else:
+                thread_id = result[0]
+                thread = Thread(id=thread_id)
+                await thread.get_async()
+
+            conn.close()
 
         return await thread.say_async(text, assistant=self)
 
     @expose_sync_method("get_default_thread")
     async def get_default_thread_async(self) -> "Thread":
-        conn, c = Assistant.get_db_connection()
-        c.execute(
-            "SELECT id FROM threads WHERE assistant_name = ? LIMIT 1", (self.name,)
-        )
-        result = c.fetchone()
+        if self.should_use_mongo():
+            db = self.get_mongo_connection()
+            thread = db.find_one({"assistant_name": self.name})
+            thread_id = thread["id"]
+        else:
+            conn, c = Assistant.get_db_connection()
+            c.execute(
+                "SELECT id FROM threads WHERE assistant_name = ? LIMIT 1", (self.name,)
+            )
+            result = c.fetchone()
+            thread_id = result[0]
+            conn.close()
 
-        thread_id = result[0]
         thread = Thread(id=thread_id)
         await thread.get_async()
-
-        conn.close()
 
         return thread
 

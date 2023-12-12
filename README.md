@@ -67,8 +67,20 @@ print(planet.name)
 # prints: "Mars"
 ```
 
-## Note
-CyberChipped will save a sqlite3 database to your working directory in order to persist and manage OpenAI Assistant threads.
+## Database
+CyberChipped requires a database to track and manage OpenAI Assistant threads across runs.
+
+
+### SQLite (default)
+Will be saved in your local working directory (where you code is located) and be called `cyberchipped.db`. Unless you use MongoDB.
+
+### MongoDB
+Set the following env vars in your .env file:
+```bash
+MONGO_URL=YOUR_MONGO_URL
+MONGO_DB=YOUR_DATABASE_NAME
+MONGO_COLLECTION=YOUR_COLLECTION_NAME
+```
 
 ## Source
 This is a hard fork of [Marvin](https://askmarvin.ai) pre-release
