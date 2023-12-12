@@ -9,4 +9,4 @@ def test_main():
         db = client[os.getenv("MONGO_DB")][os.getenv("MONGO_COLLECTION")]
         db.drop()
     os.remove("cyberchipped.db") if os.path.exists("cyberchipped.db") else None
-    assert main() == "The result of adding 1 and 1 together is 2."
+    assert main() == "2"

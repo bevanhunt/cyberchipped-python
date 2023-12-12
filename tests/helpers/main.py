@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 @ai_fn
 def echo(text: str) -> str:
     """You echo the user's input."""
-    return "`text`"
 
 
 @ai_model

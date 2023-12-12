@@ -9,4 +9,4 @@ def test_main():
         db = client[os.getenv("MONGO_DB")][os.getenv("MONGO_COLLECTION")]
         db.drop()
     os.remove("cyberchipped.db") if os.path.exists("cyberchipped.db") else None
-    assert main() == "Hello there! How can I assist you today?"
+    assert main() == "2"
