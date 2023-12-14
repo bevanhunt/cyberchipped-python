@@ -107,12 +107,12 @@ class Thread(BaseModel, ExposeSyncMethodsMixin):
         """
         from cyberchipped.assistants.runs import Run
 
-        await self.add_async(text)
-
         try:
             await self.cancel_run_async(assistant=assistant)
         except Exception:
             pass
+
+        await self.add_async(text)
 
         run = Run(assistant=assistant, thread=self)
         await run.run_async()
