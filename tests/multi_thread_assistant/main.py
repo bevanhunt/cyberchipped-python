@@ -5,12 +5,12 @@ def add(a: int, b: int) -> int:
     return a + b
 
 
-def main() -> str:
+def main(text: str) -> str:
     with Assistant(
         tools=[add],
-        instructions="You are a calculator and always use the add tool and only output the number answer.",
+        instructions="You only return the answer as a number.",
     ) as ai:
-        result = ai.say("you add 1 and 1 together.", user_id="123")
+        result = ai.say(text, user_id="123")
         return result
 
 

@@ -2,13 +2,10 @@ from cyberchipped.assistants import Assistant
 from cyberchipped.assistants.formatting import pprint_messages
 
 
-def main() -> int:
-    with Assistant(
-        instructions="You are a calculator that only returns the number answer."
-    ) as ai:
-        say = ai.say("1+1")
+def main(text: str) -> str:
+    with Assistant(instructions="You only return the number as an answer.") as ai:
+        say = ai.say(text)
         pprint_messages(ai.get_default_thread().get_messages())
-        ai.get_default_thread().delete()
         return say
 
 
