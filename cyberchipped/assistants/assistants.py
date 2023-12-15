@@ -192,6 +192,19 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
 
         return thread
 
+    @expose_sync_method("speak")
+    async def speak_async(
+        self, input: str, model="tts-1", voice="nova", response_format="aac"
+    ):
+        client = get_client()
+        response = await client.audio.speech.create(
+            input=input,
+            model=model,
+            voice=voice,
+            response_format=response_format,
+        )
+        return response.response.iter_bytes()
+
     @classmethod
     def load(cls, assistant_id: str):
         return run_sync(cls.load_async(assistant_id))

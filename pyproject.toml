@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cyberchipped"
-version = "0.3.4"
+version = "0.3.5"
 description = "Build AI Apps Fast"
 authors = ["Bevan Hunt <bevan@bevanhunt.com>"]
 license = "Apache-2.0"
