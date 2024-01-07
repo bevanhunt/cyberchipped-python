@@ -9,6 +9,7 @@ python = "^3.12"
 fastapi = "*"
 uvicorn = "*"
 python-dotenv = "*"
+python-multipart = "*"
 cyberchipped = {path = "../..", develop = true}
 
 [tool.poetry.dev-dependencies]
