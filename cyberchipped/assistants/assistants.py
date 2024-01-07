@@ -12,7 +12,6 @@ from cyberchipped.utilities.asyncio import (
 )
 from cyberchipped.utilities.logging import get_logger
 from cyberchipped.utilities.openai import get_client
-from openai._types import FileTypes
 
 from .threads import Thread
 
@@ -209,22 +208,6 @@ class Assistant(BaseModel, ExposeSyncMethodsMixin):
             response_format=response_format,
         )
         return response.response.iter_bytes()
-
-    @expose_sync_method("listen")
-    async def listen_async(
-        self,
-        file: FileTypes,
-        language: str = "en",
-        response_format: str = "text",
-    ):
-        client = get_client()
-        response = await client.audio.transcriptions.create(
-            file=file,
-            language=language,
-            model="whisper-1",
-            response_format=response_format,
-        )
-        return response
 
     @classmethod
     def load(cls, assistant_id: str):

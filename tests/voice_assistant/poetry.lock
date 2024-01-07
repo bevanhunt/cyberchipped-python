@@ -168,7 +168,7 @@ files = [
 
 [[package]]
 name = "cyberchipped"
-version = "0.3.5"
+version = "0.5.0"
 description = "Build AI Apps Fast"
 optional = false
 python-versions = ">=3.11"

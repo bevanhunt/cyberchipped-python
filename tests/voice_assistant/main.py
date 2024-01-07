@@ -1,4 +1,5 @@
 from cyberchipped.assistants import Assistant
+from cyberchipped import ai_listen
 import fastapi
 from fastapi import UploadFile
 from fastapi.responses import StreamingResponse
@@ -15,32 +16,31 @@ class SpeakBody(BaseModel):
     user_id: str
 
 
-def ai_speak(text: str, user_id: str):
+def speaking(text: str, user_id: str):
     with Assistant() as ai:
         text = ai.say(text, user_id=user_id)
         return ai.speak(text)
 
 
-def ai_listen(file: UploadFile):
-    with Assistant() as ai:
-        extension = mimetypes.guess_extension(file.content_type, False)
-        with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp:
-            temp.write(file.file.read())
-        temp_path = temp.name
+async def listening(file: UploadFile):
+    extension = mimetypes.guess_extension(file.content_type, False)
+    with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp:
+        temp.write(file.file.read())
+    temp_path = temp.name
     try:
         with open(temp_path, "rb") as temp_file:
-            return ai.listen(file=temp_file)
+            return await ai_listen(file=temp_file)
     finally:
         os.remove(temp_path)
 
 
 @app.post("/speak")
-def speak(body: SpeakBody):
-    ai_message = ai_speak(body.text, body.user_id)
+def speak_to(body: SpeakBody):
+    ai_message = speaking(body.text, body.user_id)
     return StreamingResponse(ai_message, media_type="audio/x-aac")
 
 
 @app.post("/listen")
-def listen(file: UploadFile):
-    ai_message = ai_listen(file=file)
+async def listen_to(file: UploadFile):
+    ai_message = await listening(file=file)
     return {"text": ai_message}
