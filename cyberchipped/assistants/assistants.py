@@ -29,7 +29,7 @@ logger = get_logger("Assistants")
 class Assistant(BaseModel, ExposeSyncMethodsMixin):
     id: Optional[str] = None
     name: str = "Assistant"
-    model: str = "gpt-3.5-turbo-1106"
+    model: str = "gpt-4-1106-preview"
     instructions: Optional[str] = Field(None, repr=False)
     tools: list[AssistantTools] = []
     metadata: dict[str, str] = {}
