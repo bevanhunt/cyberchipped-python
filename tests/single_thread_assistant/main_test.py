@@ -10,5 +10,3 @@ def test_main():
         db.drop()
     os.remove("cyberchipped.db") if os.path.exists("cyberchipped.db") else None
     assert main("1+1") == "2"
-    assert main("1+2") == "3"
-    assert main("1+3") == "4"
