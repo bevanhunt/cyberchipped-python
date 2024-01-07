@@ -1,5 +1,5 @@
 from cyberchipped.assistants import Assistant
-from cyberchipped import ai_listen
+from cyberchipped import ai_listen, ai_speak
 import fastapi
 from fastapi import UploadFile
 from fastapi.responses import StreamingResponse
@@ -16,12 +16,6 @@ class SpeakBody(BaseModel):
     user_id: str
 
 
-def speaking(text: str, user_id: str):
-    with Assistant() as ai:
-        text = ai.say(text, user_id=user_id)
-        return ai.speak(text)
-
-
 async def listening(file: UploadFile):
     extension = mimetypes.guess_extension(file.content_type, False)
     with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp:
@@ -35,9 +29,11 @@ async def listening(file: UploadFile):
 
 
 @app.post("/speak")
-def speak_to(body: SpeakBody):
-    ai_message = speaking(body.text, body.user_id)
-    return StreamingResponse(ai_message, media_type="audio/x-aac")
+async def speak_to(body: SpeakBody):
+    with Assistant() as ai:
+        text = ai.say(body.text, user_id=body.user_id)
+        ai_message = await ai_speak(text)
+        return StreamingResponse(ai_message, media_type="audio/x-aac")
 
 
 @app.post("/listen")
