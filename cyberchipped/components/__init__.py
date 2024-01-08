@@ -4,6 +4,7 @@ from .prompt import prompt_fn, PromptFunction
 from .ai_listen import ai_listen
 from .ai_speak import ai_speak
 from .ai_vision import ai_vision
+from .ai_image import ai_image
 
 __all__ = [
     "ai_fn",
@@ -14,4 +15,5 @@ __all__ = [
     "ai_listen",
     "ai_speak",
     "ai_vision",
+    "ai_image",
 ]

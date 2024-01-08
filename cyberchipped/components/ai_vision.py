@@ -1,11 +1,13 @@
+from typing import Literal
 from cyberchipped.utilities.openai import get_client
 
 
-# 'image/png', 'image/jpeg', 'image/gif', 'image/webp'
 async def ai_vision(
     user_prompt: str,
     base64_image: str,
-    mime_type: str = "image/png",
+    mime_type: Literal[
+        "image/png", "image/jpeg", "image/gif", "image/webp"
+    ] = "image/png",
 ):
     client = get_client()
     response = await client.chat.completions.create(

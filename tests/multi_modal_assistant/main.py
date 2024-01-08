@@ -1,8 +1,8 @@
 import base64
 from cyberchipped.assistants import Assistant
-from cyberchipped import ai_listen, ai_speak, ai_vision
+from cyberchipped import ai_listen, ai_speak, ai_vision, ai_image
 import fastapi
-from fastapi import UploadFile
+from fastapi import Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import tempfile
@@ -55,3 +55,11 @@ async def vision_to(file: UploadFile, user_prompt: str = "What is this artwork?"
             return {"text": ai_message}
     finally:
         os.remove(temp_path)
+
+
+@app.post("/image")
+async def image_to(user_prompt: str = "Create an image of a cat."):
+    ai_message = await ai_image(user_prompt=user_prompt, response_format="b64_json")
+    b64_json = ai_message[0].b64_json
+    image = base64.b64decode(b64_json)
+    return Response(image, media_type="image/png")
