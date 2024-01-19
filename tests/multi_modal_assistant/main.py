@@ -2,7 +2,7 @@ import base64
 from cyberchipped.assistants import Assistant
 from cyberchipped import ai_listen, ai_speak, ai_vision, ai_image
 import fastapi
-from fastapi import Response, UploadFile
+from fastapi import File, Form, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import tempfile
@@ -40,7 +40,7 @@ async def listen_to(file: UploadFile):
 
 
 @app.post("/vision")
-async def vision_to(file: UploadFile, user_prompt: str = "What is this artwork?"):
+async def vision_to(file: UploadFile = File(...), user_prompt: str = Form(...)):
     extension = mimetypes.guess_extension(file.content_type, False)
     with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp:
         temp.write(file.file.read())
