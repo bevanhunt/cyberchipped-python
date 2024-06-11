@@ -84,6 +84,7 @@ class MongoDatabase:
         return document["thread_id"] if document else None
 
     async def save_message(self, user_id: str, metadata: Dict[str, Any]):
+        metadata["user_id"] = user_id
         await self.messages.insert_one(metadata)
 
     async def delete_thread_id(self, user_id: str):
@@ -219,8 +220,6 @@ class AI:
             role="user",
             content=transcript,
         )
-
-        print(self.assistant_id)
 
         response_text = ""
         with openai.beta.threads.runs.stream(
