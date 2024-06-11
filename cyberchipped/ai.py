@@ -174,6 +174,15 @@ class AI:
                 tools=self.tools,
                 model=self.model,
             ).id
+    
+    async def __aenter__(self):
+        # Perform any setup actions here
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        # Perform any cleanup actions here
+        pass
+
 
     async def create_thread(self, user_id: str) -> str:
         thread_id = await self.database.get_thread_id(user_id)

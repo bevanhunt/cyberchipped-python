@@ -48,5 +48,10 @@ You can use MongoDB or SQLite.
 ## Platform Support
 Mac and Linux
 
+## Run tests
+```bash
+poetry run pytest
+```
+
 ## Requirements
 Python >= 3.12

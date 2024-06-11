@@ -15,31 +15,36 @@ def sqlite_db():
     os.remove(db_path)
 
 @pytest.fixture
-def ai_instance(sqlite_db):
+async def ai_instance(sqlite_db):
     database = SQLiteDatabase(sqlite_db)
-    return AI(
+    async with AI(
         api_key=os.getenv("OPENAI_API_KEY"),
         name="Test AI",
         instructions="You are a test AI.",
         database=database,
-    )
+    ) as ai:
+        yield ai
 
 @pytest.fixture
 def audio_file():
     audio_file = BytesIO(open("test.mp3", "rb").read())
     return UploadFile(audio_file, filename="test.mp3")
 
-@pytest.mark.asyncio
+@pytest.fixture
+def anyio_backend():
+    return 'asyncio'
+
+@pytest.mark.anyio
 async def test_create_thread(ai_instance):
     thread_id = await ai_instance.create_thread("user_123")
     assert thread_id is not None
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_listen(ai_instance, audio_file):
     transcript = await ai_instance.listen(audio_file)
     assert transcript is not None
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_conversation(ai_instance, sqlite_db, audio_file):
     # Run the conversation method
     response = await ai_instance.conversation("user_123", audio_file)
@@ -56,7 +61,7 @@ async def test_conversation(ai_instance, sqlite_db, audio_file):
             assert saved_message[1] is not None
             assert saved_message[2] is not None
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_add_tool(ai_instance):
     @ai_instance.add_tool(ToolConfig(name="test_tool", description="test description"))
     def test_tool_function(arg1, arg2):
