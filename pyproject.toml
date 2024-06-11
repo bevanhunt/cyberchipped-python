@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cyberchipped"
-version = "1.0.0"
+version = "1.0.1"
 description = "Build AI Assistants Fast"
 authors = ["Bevan Hunt <bevan@bevanhunt.com>"]
 license = "Apache-2.0"
@@ -28,7 +28,7 @@ fastapi = "^0.111.0"
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-watch = "*"
-pytest-asyncio = "*"
+anyio = "*"
 coverage = "*"
 python-dotenv = "*"
 
