@@ -31,8 +31,8 @@ async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)
         name="CometHeart AI Simple",
         instructions="You are CometHeart an AI voice assistant - you answer questions and help with tasks. You keep your responses brief and tailor them for speech.",
         database=database
-    ) as manager:
-        audio_generator = await manager.conversation(user_id, audio_file)
+    ) as ai:
+        audio_generator = await ai.conversation(user_id, audio_file)
 
         return StreamingResponse(
             content=audio_generator,
