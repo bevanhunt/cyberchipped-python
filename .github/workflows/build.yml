@@ -16,9 +16,10 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
-        python-version: [3.11.6, 3.12.1]
+        python-version: [3.12.3]
 
     steps:
     - uses: actions/checkout@v2
