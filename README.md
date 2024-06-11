@@ -7,13 +7,10 @@
 ![CyberChipped Logo](https://cyberchipped.com/375.png)
 
 ## Introduction
-CyberChipped enables building powerful AI apps fast by providing three core abstractions.
 
-These abstractions are the OpenAI Assistant, AI Function, and AI Model.
+CyberChipped powers the best AI Companion - [CometHeart](https://cometheart.com)!
 
-The key selling point of this library is to build an OpenAI Assistant in two lines of code!
-
-CyberChipped powers the most feature-rich AI Companion - [CometHeart](https://cometheart.com)!
+In a few lines of code built a conversational AI Assistant!
 
 ## Install
 
@@ -31,62 +28,26 @@ OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 
 ### OpenAI Assistant
 ```python
-from cyberchipped.assistants import Assistant
+from cyberchipped.ai import SQLiteDatabase, AI
 
-
-with Assistant() as ai:
-    print(ai.say("Hello World!"))
-    # prints: "Hello there! How can I assist you today?"
-```
-
-### AI Function
-```python
-from cyberchipped import ai_fn
-
-@ai_fn
-def echo(text: str) -> str:
-    """You return `text`."""
-
-print(echo("Hello World!"))
-# prints: "Hello World!"
-
-```
-
-### AI Model
-```python
-from cyberchipped import ai_model
-from pydantic import BaseModel, Field
-
-@ai_model
-class Planet(BaseModel):
-    """Planet Attributes"""
-    name: str = Field(..., description="The name of the planet.")
-
-planet = Planet("Mars is a great place to visit!")
-print(planet.name)
-# prints: "Mars"
+database = SQLiteDatabase(sqlite_db)
+with AI(
+    api_key="YOUR_OPENAI_API_KEY",
+    name="AI Assistant",
+    instructions="You are a friendly AI.",
+    database=database,
+) as ai:
+    audio_file = UploadFile # from FastAPI
+    ai.conversation("user_123", audio_file)
 ```
 
 ## Database
 CyberChipped requires a database to track and manage OpenAI Assistant threads across runs.
 
-
-### SQLite (default)
-Will be saved in your local working directory (where you code is located) and be called `cyberchipped.db`. Unless you use MongoDB.
-
-### MongoDB
-Set the following env vars in your .env file:
-```bash
-MONGO_URL=YOUR_MONGO_URL
-MONGO_DB=YOUR_DATABASE_NAME
-MONGO_COLLECTION=YOUR_COLLECTION_NAME
-```
-
-## Source
-This is a hard fork of [Marvin](https://askmarvin.ai) pre-release
+You can use MongoDB or SQLite.
 
 ## Platform Support
 Mac and Linux
 
 ## Requirements
-Python >= 3.11
+Python >= 3.12

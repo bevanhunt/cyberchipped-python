@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "cyberchipped"
-version = "0.8.0"
-description = "Build AI Apps Fast"
+version = "1.0.0"
+description = "Build AI Assistants Fast"
 authors = ["Bevan Hunt <bevan@bevanhunt.com>"]
 license = "Apache-2.0"
 readme = "README.md"
 homepage = "https://cyberchipped.com"
-repository = "https://github.com/bevanhunt/cyberchipped"
+repository = "https://github.com/truemagic-coder/cyberchipped"
 keywords = ["ai", "openai"]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
@@ -18,20 +18,19 @@ packages = [{ include = "cyberchipped" }]
 python_paths = [".", "tests"]
 
 [tool.poetry.dependencies]
-python = ">=3.11"
-jinja2 = ">=3.1.2"
-openai = ">=1.1.0"
-pydantic = ">=2.4.2"
-pydantic_settings = "*"
-rich = ">=12"
-tiktoken = ">=0.4.0"
-python-dotenv = ">=1.0.0"
-pymongo = ">=4.6.1"
+python = ">=3.12"
+openai = "^1.33.0"
+pydantic = "^2.7.1"
+motor = "^3.4.0"
+aiosqlite = "^0.20.0"
+fastapi = "^0.111.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-watch = "*"
+pytest-asyncio = "*"
 coverage = "*"
+python-dotenv = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
