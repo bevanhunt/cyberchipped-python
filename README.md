@@ -18,27 +18,26 @@ In a few lines of code built a conversational AI Assistant!
 pip install cyberchipped
 ```
 
-## Setup
-Create a .env file in your project root with this key in it:
-```bash
-OPENAI_API_KEY=YOUR_OPENAI_API_KEY
-```
-
-## Abstractions
-
-### OpenAI Assistant
+## OpenAI Assistant
 ```python
 from cyberchipped.ai import SQLiteDatabase, AI
 
-database = SQLiteDatabase(sqlite_db)
-with AI(
-    api_key="YOUR_OPENAI_API_KEY",
-    name="AI Assistant",
-    instructions="You are a friendly AI.",
-    database=database,
-) as ai:
-    audio_file = UploadFile # from FastAPI
-    ai.conversation("user_123", audio_file)
+database = SQLiteDatabase("sqlite.db")
+
+@app.post("/conversation/{user_id}")
+async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)):
+    async with AI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        name="CometHeart AI Simple",
+        instructions="You are CometHeart an AI voice assistant - you answer questions and help with tasks. You keep your responses brief and tailor them for speech.",
+        database=database
+    ) as manager:
+        audio_generator = await manager.conversation(user_id, audio_file)
+
+        return StreamingResponse(
+            content=audio_generator,
+            media_type="audio/x-aac",
+        )
 ```
 
 ## Database
