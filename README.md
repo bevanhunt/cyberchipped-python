@@ -10,7 +10,7 @@
 
 CyberChipped powers the best AI Companion - [CometHeart](https://cometheart.com)!
 
-In a few lines of code built a conversational AI Assistant!
+In a few lines of code build a conversational AI Assistant!
 
 ## Install
 
