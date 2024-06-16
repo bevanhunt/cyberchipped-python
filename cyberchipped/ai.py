@@ -38,7 +38,7 @@ class EventHandler(AssistantEventHandler):
             run_id = event.data.id  # Retrieve the run ID from the event data
             self.handle_requires_action(event.data, run_id)
 
-    async def handle_requires_action(self, data, run_id):
+    def handle_requires_action(self, data, run_id):
         tool_outputs = []
         print("Handling requires action")
         print(data)
@@ -49,7 +49,8 @@ class EventHandler(AssistantEventHandler):
             if tool.function.name in self.tool_handlers:
                 handler = self.tool_handlers[tool.function.name]
                 inputs = json.loads(tool.function.arguments)
-                output = await handler(**inputs)
+                output = handler(**inputs)
+                print(f"Output: {output}")
                 tool_outputs.append({"tool_call_id": tool.id, "output": output})
 
         print(f"Submitting tool outputs: {tool_outputs}")

@@ -28,19 +28,19 @@ async def ai_instance(sqlite_db):
 
     # Add tools before creating the assistant
     @ai.add_tool
-    async def test_function(arg1: int, arg2: int) -> int:
+    def test_function(arg1: int, arg2: int) -> int:
         """A test tool"""
         return arg1 + arg2
 
     @ai.add_tool
-    async def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
+    def get_current_temperature(location: str, unit: str) -> str:
         """Get the current temperature for a specific location"""
-        return {"temperature": 22, "unit": unit, "location": location}
+        return f"The current temperature in {location} is 20 degrees {unit}"
 
     @ai.add_tool
-    async def get_rain_probability(location: str) -> Dict[str, Any]:
+    def get_rain_probability(location: str) -> str:
         """Get the probability of rain for a specific location"""
-        return {"probability": 0.2, "location": location}
+        return f"The probability of rain in {location} is 20%"
 
     async with ai as ai_instance:
         yield ai_instance
@@ -54,42 +54,42 @@ def audio_file():
 def anyio_backend():
     return 'asyncio'
 
-# @pytest.mark.anyio
-# async def test_create_thread(ai_instance):
-#     thread_id = await ai_instance.create_thread("user_123")
-#     assert thread_id is not None
+@pytest.mark.anyio
+async def test_create_thread(ai_instance):
+    thread_id = await ai_instance.create_thread("user_123")
+    assert thread_id is not None
 
-# @pytest.mark.anyio
-# async def test_listen(ai_instance, audio_file):
-#     transcript = await ai_instance.listen(audio_file)
-#     assert transcript is not None
+@pytest.mark.anyio
+async def test_listen(ai_instance, audio_file):
+    transcript = await ai_instance.listen(audio_file)
+    assert transcript is not None
 
-# @pytest.mark.anyio
-# async def test_text(ai_instance, sqlite_db):
-#     response = await ai_instance.text("user_123", "Hello, world!")
+@pytest.mark.anyio
+async def test_text(ai_instance, sqlite_db):
+    response = await ai_instance.text("user_123", "Hello, world!")
 
-#     assert response is not None
+    assert response is not None
 
-#     async with aiosqlite.connect(sqlite_db) as db:
-#         async with db.execute("SELECT * FROM messages WHERE user_id = ?", ("user_123",)) as cursor:
-#             saved_message = await cursor.fetchone()
-#             assert saved_message is not None
-#             assert saved_message[0] == "user_123"
-#             assert saved_message[1] is not None
-#             assert saved_message[2] is not None
+    async with aiosqlite.connect(sqlite_db) as db:
+        async with db.execute("SELECT * FROM messages WHERE user_id = ?", ("user_123",)) as cursor:
+            saved_message = await cursor.fetchone()
+            assert saved_message is not None
+            assert saved_message[0] == "user_123"
+            assert saved_message[1] is not None
+            assert saved_message[2] is not None
 
-# @pytest.mark.anyio
-# async def test_conversation(ai_instance, sqlite_db, audio_file):
-#     response = await ai_instance.conversation("user_123", audio_file)
-#     assert response is not None
+@pytest.mark.anyio
+async def test_conversation(ai_instance, sqlite_db, audio_file):
+    response = await ai_instance.conversation("user_123", audio_file)
+    assert response is not None
 
-#     async with aiosqlite.connect(sqlite_db) as db:
-#         async with db.execute("SELECT * FROM messages WHERE user_id = ?", ("user_123",)) as cursor:
-#             saved_message = await cursor.fetchone()
-#             assert saved_message is not None
-#             assert saved_message[0] == "user_123"
-#             assert saved_message[1] is not None
-#             assert saved_message[2] is not None
+    async with aiosqlite.connect(sqlite_db) as db:
+        async with db.execute("SELECT * FROM messages WHERE user_id = ?", ("user_123",)) as cursor:
+            saved_message = await cursor.fetchone()
+            assert saved_message is not None
+            assert saved_message[0] == "user_123"
+            assert saved_message[1] is not None
+            assert saved_message[2] is not None
 
 @pytest.mark.anyio
 async def test_tool_decorator(ai_instance):
