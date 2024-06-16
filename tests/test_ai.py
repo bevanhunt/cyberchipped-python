@@ -5,7 +5,6 @@ from cyberchipped.ai import AI, SQLiteDatabase
 import os
 import aiosqlite
 from dotenv import load_dotenv
-from typing import Dict, Any
 
 load_dotenv()
 
@@ -28,19 +27,19 @@ async def ai_instance(sqlite_db):
 
     # Add tools before creating the assistant
     @ai.add_tool
-    async def test_function(arg1: int, arg2: int) -> int:
+    def test_function(arg1: int, arg2: int) -> int:
         """A test tool"""
         return arg1 + arg2
 
     @ai.add_tool
-    async def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
+    def get_current_temperature(location: str, unit: str) -> str:
         """Get the current temperature for a specific location"""
-        return {"temperature": 22, "unit": unit, "location": location}
+        return f"The current temperature in {location} is 20 degrees {unit}"
 
     @ai.add_tool
-    async def get_rain_probability(location: str) -> Dict[str, Any]:
+    def get_rain_probability(location: str) -> str:
         """Get the probability of rain for a specific location"""
-        return {"probability": 0.2, "location": location}
+        return f"The probability of rain in {location} is 20%"
 
     async with ai as ai_instance:
         yield ai_instance

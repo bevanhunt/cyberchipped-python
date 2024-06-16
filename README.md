@@ -38,10 +38,10 @@ async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)
         instructions="You are CometHeart an AI voice assistant - you answer questions and help with tasks. You keep your responses brief and tailor them for speech.",
         database=database
     ) as ai:
-        ai.add_tool
-        async def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
+        @ai.add_tool
+        def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
             """Get the current temperature for a specific location"""
-            return {"temperature": 22, "unit": unit, "location": location}
+            return f"The current temperature in {location} is 20 degrees {unit}"
 
         audio_generator = await ai.conversation(user_id, audio_file)
 
@@ -73,10 +73,10 @@ async def conversation_endpoint(user_id: str, text: Text, audio_file: UploadFile
         instructions="You are CometHeart an AI voice assistant - you answer questions and help with tasks. You keep your responses brief and tailor them for speech.",
         database=database
     ) as ai:
-        ai.add_tool
-        async def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
+        @ai.add_tool
+        def get_current_temperature(location: str, unit: str) -> str:
             """Get the current temperature for a specific location"""
-            return {"temperature": 22, "unit": unit, "location": location}
+            return f"The current temperature in {location} is 20 degrees {unit}"
 
         text_generator = await ai.text(user_id, text.text)
 
