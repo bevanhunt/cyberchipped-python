@@ -1,6 +1,6 @@
 import mimetypes
 from datetime import datetime
-from typing import Optional, Dict, Any, Callable
+from typing import Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 from openai import OpenAI
@@ -206,8 +206,50 @@ class AI:
             model="whisper-1", file=(f"file.{extension}", audio_file.file)
         )
         return transcription.text
+    
+    async def text(self, user_id: str, text: str):
+        thread_id = await self.database.get_thread_id(user_id)
 
-    async def conversation(self, user_id: str, audio_file: UploadFile):
+        if thread_id is None:
+            thread_id = await self.create_thread(user_id)
+
+        self.current_thread_id = thread_id
+        openai.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=text,
+        )
+
+        response_text = ""
+        with openai.beta.threads.runs.stream(
+            thread_id=thread_id,
+            assistant_id=self.assistant_id,
+            event_handler=EventHandler(self),
+        ) as stream:
+            for event in stream:
+                if hasattr(event.data, "delta") and hasattr(
+                    event.data.delta, "content"
+                ):
+                    for content_block in event.data.delta.content:
+                        if content_block.type == "text":
+                            response_text += content_block.text.value
+
+        metadata = {
+            "user_id": user_id,
+            "message": text,
+            "response": response_text,
+            "timestamp": datetime.now(),
+        }
+
+        await self.database.save_message(user_id, metadata)
+
+        return response_text
+
+    async def conversation(self, 
+                           user_id: str, 
+                           audio_file: UploadFile,
+                           voice: Literal['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] = 'nova',
+                           response_format: Literal['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm'] = 'mp3'):
         thread_id = await self.database.get_thread_id(user_id)
 
         if thread_id is None:
@@ -246,8 +288,9 @@ class AI:
 
         response = self.client.audio.speech.create(
             model="tts-1",
-            voice="nova",
+            voice=voice,
             input=response_text,
+            response_format=response_format,
         )
 
         return response.response.iter_bytes()

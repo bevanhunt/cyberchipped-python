@@ -45,6 +45,23 @@ async def test_listen(ai_instance, audio_file):
     assert transcript is not None
 
 @pytest.mark.anyio
+async def test_text(ai_instance, sqlite_db):
+    # Run the text method
+    response = await ai_instance.text("user_123", "Hello, world!")
+
+    # Verify the response
+    assert response is not None
+
+    # Verify that the message was saved in the database
+    async with aiosqlite.connect(sqlite_db) as db:
+        async with db.execute("SELECT * FROM messages WHERE user_id = ?", ("user_123",)) as cursor:
+            saved_message = await cursor.fetchone()
+            assert saved_message is not None
+            assert saved_message[0] == "user_123"
+            assert saved_message[1] is not None
+            assert saved_message[2] is not None
+
+@pytest.mark.anyio
 async def test_conversation(ai_instance, sqlite_db, audio_file):
     # Run the conversation method
     response = await ai_instance.conversation("user_123", audio_file)
