@@ -39,7 +39,7 @@ async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)
         database=database
     ) as ai:
         @ai.add_tool
-        def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
+        def get_current_temperature(location: str, unit: str) -> str:
             """Get the current temperature for a specific location"""
             return f"The current temperature in {location} is 20 degrees {unit}"
 
