@@ -1,6 +1,7 @@
+import json
 import mimetypes
 from datetime import datetime
-from typing import Literal, Optional, Dict, Any, Callable
+from typing import Literal, Optional, Dict, Any, Callable, get_type_hints
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 from openai import OpenAI
@@ -10,6 +11,7 @@ from fastapi import UploadFile
 from openai import AssistantEventHandler
 from typing_extensions import override
 import sqlite3
+import inspect
 
 # Custom adapter for datetime
 def adapt_datetime(ts):
@@ -25,48 +27,43 @@ sqlite3.register_converter("timestamp", convert_datetime)
 
 
 class EventHandler(AssistantEventHandler):
-    def __init__(self, manager):
-        super().__init__()
-        self.manager = manager
-
     @override
     def on_event(self, event):
-        if event.event == "thread.run.requires_action":
-            run_id = event.data.id
-            self.handle_requires_action(event.data, run_id)
-        else:
-            super().on_event(event)
-
+      # Retrieve events that are denoted with 'requires_action'
+      # since these will have our tool_calls
+      if event.event == 'thread.run.requires_action':
+        run_id = event.data.id  # Retrieve the run ID from the event data
+        self.handle_requires_action(event.data, run_id)
+ 
     def handle_requires_action(self, data, run_id):
-        tool_outputs = []
-
-        for tool in data.required_action.submit_tool_outputs.tool_calls:
-            func_name = tool.function.name
-            tool_func = next(
-                (t["function"] for t in self.manager.tools if t["name"] == func_name),
-                None,
-            )
-            if tool_func:
-                output = tool_func(*tool.function.arguments)
-                tool_outputs.append({"tool_call_id": tool.id, "output": output})
-
-        self.submit_tool_outputs(tool_outputs, run_id)
-
+      tool_outputs = []
+        
+      for tool in data.required_action.submit_tool_outputs.tool_calls:
+        if tool.function.name == "get_current_temperature":
+          tool_outputs.append({"tool_call_id": tool.id, "output": "57"})
+        elif tool.function.name == "get_rain_probability":
+          tool_outputs.append({"tool_call_id": tool.id, "output": "0.06"})
+        
+      # Submit all tool_outputs at the same time
+      self.submit_tool_outputs(tool_outputs, run_id)
+ 
     def submit_tool_outputs(self, tool_outputs, run_id):
-        with self.manager.client.beta.threads.runs.submit_tool_outputs_stream(
-            thread_id=self.manager.current_thread_id,
-            run_id=run_id,
-            tool_outputs=tool_outputs,
-            event_handler=self,
-        ) as stream:
-            for text in stream.text_deltas:
-                print(text, end="", flush=True)
-            print()
+      # Use the submit_tool_outputs_stream helper
+      with openai.beta.threads.runs.submit_tool_outputs_stream(
+        thread_id=self.current_run.thread_id,
+        run_id=self.current_run.id,
+        tool_outputs=tool_outputs,
+        event_handler=EventHandler(),
+      ) as stream:
+        for text in stream.text_deltas:
+          print(text, end="", flush=True)
+        print()
 
 
 class ToolConfig(BaseModel):
     name: str
     description: str
+    parameters: Dict[str, Any]
 
 
 class MongoDatabase:
@@ -162,28 +159,24 @@ class AI:
         self.database = database
         self.client = OpenAI()
 
+    async def __aenter__(self):
         assistants = openai.beta.assistants.list()
         for assistant in assistants:
             if assistant.name == self.name:
-                self.assistant_id = assistant.id
+                openai.beta.assistants.delete(assistant.id)
                 break
 
-        if self.assistant_id is None:
-            self.assistant_id = openai.beta.assistants.create(
-                name=self.name,
-                instructions=self.instructions,
-                tools=self.tools,
-                model=self.model,
-            ).id
-    
-    async def __aenter__(self):
-        # Perform any setup actions here
+        self.assistant_id = openai.beta.assistants.create(
+            name=self.name,
+            instructions=self.instructions,
+            tools=self.tools,
+            model=self.model,
+        ).id
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         # Perform any cleanup actions here
         pass
-
 
     async def create_thread(self, user_id: str) -> str:
         thread_id = await self.database.get_thread_id(user_id)
@@ -224,7 +217,7 @@ class AI:
         with openai.beta.threads.runs.stream(
             thread_id=thread_id,
             assistant_id=self.assistant_id,
-            event_handler=EventHandler(self),
+            event_handler=EventHandler(),
         ) as stream:
             for event in stream:
                 if hasattr(event.data, "delta") and hasattr(
@@ -267,7 +260,7 @@ class AI:
         with openai.beta.threads.runs.stream(
             thread_id=thread_id,
             assistant_id=self.assistant_id,
-            event_handler=EventHandler(self),
+            event_handler=EventHandler(),
         ) as stream:
             for event in stream:
                 if hasattr(event.data, "delta") and hasattr(
@@ -295,19 +288,16 @@ class AI:
 
         return response.response.iter_bytes()
 
-    def add_tool(self, tool_config: ToolConfig):
-        def decorator(func: Callable):
-            self.tools.append(
-                {
-                    "type": "function_calling",
-                    "name": tool_config.name,
-                    "description": tool_config.description,
-                    "function": func,
-                }
-            )
-            return func
-
-        return decorator
+    def add_tool(self, func: Callable):
+        sig = inspect.signature(func)
+        parameters = {"type": "object", "properties": {}, "required": []}
+        for name, param in sig.parameters.items():
+            parameters["properties"][name] = {"type": "string", "description": "foo"}
+            if param.default == inspect.Parameter.empty:
+                parameters["required"].append(name)
+        tool_config = {"type": "function", "function": {"name": func.__name__, "description": func.__doc__ or "", "parameters": parameters}}
+        self.tools.append(tool_config)
+        return func
 
 
 tool = AI.add_tool
