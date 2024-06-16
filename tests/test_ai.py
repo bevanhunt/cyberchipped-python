@@ -1,10 +1,11 @@
 import pytest
 from fastapi import UploadFile
 from io import BytesIO
-from cyberchipped.ai import AI, ToolConfig, SQLiteDatabase
+from cyberchipped.ai import AI, SQLiteDatabase
 import os
 import aiosqlite
 from dotenv import load_dotenv
+from typing import Dict, Any
 
 load_dotenv()
 
@@ -12,23 +13,42 @@ load_dotenv()
 def sqlite_db():
     db_path = "test_db.sqlite"
     yield db_path
-    os.remove(db_path)
+    if os.path.exists(db_path):
+        os.remove(db_path)
 
 @pytest.fixture
 async def ai_instance(sqlite_db):
     database = SQLiteDatabase(sqlite_db)
-    async with AI(
+    ai = AI(
         api_key=os.getenv("OPENAI_API_KEY"),
         name="Test AI",
-        instructions="You are a test AI.",
+        instructions="You are a test AI that keeps answers to the most brief answers.",
         database=database,
-    ) as ai:
-        yield ai
+    )
+
+    # Add tools before creating the assistant
+    @ai.add_tool
+    async def test_function(arg1: int, arg2: int) -> int:
+        """A test tool"""
+        return arg1 + arg2
+
+    @ai.add_tool
+    async def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
+        """Get the current temperature for a specific location"""
+        return {"temperature": 22, "unit": unit, "location": location}
+
+    @ai.add_tool
+    async def get_rain_probability(location: str) -> Dict[str, Any]:
+        """Get the probability of rain for a specific location"""
+        return {"probability": 0.2, "location": location}
+
+    async with ai as ai_instance:
+        yield ai_instance
 
 @pytest.fixture
 def audio_file():
     audio_file = BytesIO(open("test.mp3", "rb").read())
-    return UploadFile(audio_file, filename="test.mp3")
+    return UploadFile(file=audio_file, filename="test.mp3")
 
 @pytest.fixture
 def anyio_backend():
@@ -46,13 +66,10 @@ async def test_listen(ai_instance, audio_file):
 
 @pytest.mark.anyio
 async def test_text(ai_instance, sqlite_db):
-    # Run the text method
     response = await ai_instance.text("user_123", "Hello, world!")
 
-    # Verify the response
     assert response is not None
 
-    # Verify that the message was saved in the database
     async with aiosqlite.connect(sqlite_db) as db:
         async with db.execute("SELECT * FROM messages WHERE user_id = ?", ("user_123",)) as cursor:
             saved_message = await cursor.fetchone()
@@ -63,13 +80,9 @@ async def test_text(ai_instance, sqlite_db):
 
 @pytest.mark.anyio
 async def test_conversation(ai_instance, sqlite_db, audio_file):
-    # Run the conversation method
     response = await ai_instance.conversation("user_123", audio_file)
-
-    # Verify the response
     assert response is not None
 
-    # Verify that the message was saved in the database
     async with aiosqlite.connect(sqlite_db) as db:
         async with db.execute("SELECT * FROM messages WHERE user_id = ?", ("user_123",)) as cursor:
             saved_message = await cursor.fetchone()
@@ -79,12 +92,18 @@ async def test_conversation(ai_instance, sqlite_db, audio_file):
             assert saved_message[2] is not None
 
 @pytest.mark.anyio
-async def test_add_tool(ai_instance):
-    @ai_instance.add_tool(ToolConfig(name="test_tool", description="test description"))
-    def test_tool_function(arg1, arg2):
-        return arg1 + arg2
+async def test_tool_decorator(ai_instance):
+    assert len(ai_instance.tools) == 3  # Ensure that the tools are added
+    tool = ai_instance.tools[0]
+    assert tool["function"]["name"] == "test_function"
+    assert tool["function"]["description"] == "A test tool"
 
-    assert len(ai_instance.tools) == 1
-    assert ai_instance.tools[0]["name"] == "test_tool"
-    assert ai_instance.tools[0]["description"] == "test description"
-    assert ai_instance.tools[0]["function"] == test_tool_function
+@pytest.mark.anyio
+async def test_get_current_temperature_tool(ai_instance):
+    response = await ai_instance.text("user_123", "What is the current temperature in New York, NY in Celsius?")
+    assert response is not None
+
+@pytest.mark.anyio
+async def test_get_rain_probability_tool(ai_instance):
+    response = await ai_instance.text("user_123", "What is the probability of rain in San Francisco, CA?")
+    assert response is not None

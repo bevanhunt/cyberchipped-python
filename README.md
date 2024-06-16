@@ -19,8 +19,14 @@ pip install cyberchipped
 ```
 
 ## OpenAI Assistant
+
+### Audio Conversation
+
 ```python
 from cyberchipped.ai import SQLiteDatabase, AI
+from fastapi import UploadFile, File
+from fastapi.responses import StreamingResponse
+import os
 
 database = SQLiteDatabase("sqlite.db")
 
@@ -32,6 +38,11 @@ async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)
         instructions="You are CometHeart an AI voice assistant - you answer questions and help with tasks. You keep your responses brief and tailor them for speech.",
         database=database
     ) as ai:
+        ai.add_tool
+        async def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
+            """Get the current temperature for a specific location"""
+            return {"temperature": 22, "unit": unit, "location": location}
+
         audio_generator = await ai.conversation(user_id, audio_file)
 
         return StreamingResponse(
@@ -40,18 +51,40 @@ async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)
         )
 ```
 
-## Database
-CyberChipped requires a database to track and manage OpenAI Assistant threads across runs.
+#### Text Conversation
 
-You can use MongoDB or SQLite.
+```python
+from cyberchipped.ai import SQLiteDatabase, AI
+from fastapi import UploadFile, File
+from fastapi.responses import StreamingResponse
+import os
+from pydantic import BaseClass
 
-## Platform Support
-Mac and Linux
+database = SQLiteDatabase("sqlite.db")
 
-## Run tests
+class Text(BaseClass):
+    text: str
+
+@app.post("/conversation/{user_id}")
+async def conversation_endpoint(user_id: str, text: Text, audio_file: UploadFile = File(...)):
+    async with AI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        name="CometHeart AI Simple",
+        instructions="You are CometHeart an AI voice assistant - you answer questions and help with tasks. You keep your responses brief and tailor them for speech.",
+        database=database
+    ) as ai:
+        ai.add_tool
+        async def get_current_temperature(location: str, unit: str) -> Dict[str, Any]:
+            """Get the current temperature for a specific location"""
+            return {"temperature": 22, "unit": unit, "location": location}
+
+        text_generator = await ai.text(user_id, text.text)
+
+        return text_generator
+```
+
+### Run Tests
+
 ```bash
 poetry run pytest
 ```
-
-## Requirements
-Python >= 3.12
