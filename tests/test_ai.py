@@ -67,6 +67,7 @@ async def test_listen(ai_instance, audio_file):
 @pytest.mark.anyio
 async def test_text(ai_instance, sqlite_db):
     response = await ai_instance.text("user_123", "Hello, world!")
+
     assert response is not None
 
     async with aiosqlite.connect(sqlite_db) as db:
