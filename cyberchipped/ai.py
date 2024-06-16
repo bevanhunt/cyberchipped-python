@@ -1,7 +1,7 @@
 import json
 import mimetypes
 from datetime import datetime
-from typing import Literal, Optional, Callable
+from typing import Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 from openai import OpenAI
