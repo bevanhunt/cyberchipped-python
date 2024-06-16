@@ -1,3 +1,4 @@
+import json
 import mimetypes
 from datetime import datetime
 from typing import Literal, Optional, Dict, Any, Callable
@@ -27,6 +28,7 @@ sqlite3.register_converter("timestamp", convert_datetime)
 
 class EventHandler(AssistantEventHandler):
     def __init__(self, tool_handlers):
+        super().__init__()
         self.tool_handlers = tool_handlers
 
     @override
@@ -36,15 +38,21 @@ class EventHandler(AssistantEventHandler):
             run_id = event.data.id  # Retrieve the run ID from the event data
             self.handle_requires_action(event.data, run_id)
 
-    def handle_requires_action(self, data, run_id):
+    async def handle_requires_action(self, data, run_id):
         tool_outputs = []
+        print("Handling requires action")
+        print(data)
 
         for tool in data.required_action.submit_tool_outputs.tool_calls:
+            print(f"Tool: {tool.function.name}")
+            print(tool.function.name, self.tool_handlers)
             if tool.function.name in self.tool_handlers:
                 handler = self.tool_handlers[tool.function.name]
-                inputs = tool.function.arguments
-                output = handler(**inputs)
+                inputs = json.loads(tool.function.arguments)
+                output = await handler(**inputs)
                 tool_outputs.append({"tool_call_id": tool.id, "output": output})
+
+        print(f"Submitting tool outputs: {tool_outputs}")
 
         # Submit all tool_outputs at the same time
         self.submit_tool_outputs(tool_outputs, run_id)
@@ -299,6 +307,7 @@ class AI:
                 parameters["required"].append(name)
         tool_config = {"type": "function", "function": {"name": func.__name__, "description": func.__doc__ or "", "parameters": parameters}}
         self.tools.append(tool_config)
+        self.tool_handlers[func.__name__] = func
         return func
 
 
