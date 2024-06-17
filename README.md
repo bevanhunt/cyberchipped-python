@@ -20,8 +20,6 @@ pip install cyberchipped
 
 ## OpenAI Assistant
 
-### Audio Conversation
-
 ```python
 from cyberchipped.ai import SQLiteDatabase, AI
 from fastapi import UploadFile, File
@@ -32,18 +30,20 @@ database = SQLiteDatabase("sqlite.db")
 
 @app.post("/conversation/{user_id}")
 async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)):
-    async with AI(
+    ai = AI(
         api_key=os.getenv("OPENAI_API_KEY"),
         name="CometHeart AI Simple",
         instructions="You are CometHeart an AI voice assistant - you answer questions and help with tasks. You keep your responses brief and tailor them for speech.",
         database=database
-    ) as ai:
-        @ai.add_tool
-        def get_current_temperature(location: str, unit: str) -> str:
-            """Get the current temperature for a specific location"""
-            return f"The current temperature in {location} is 20 degrees {unit}"
+    )
+    
+    @ai.add_tool
+    def get_current_temperature(location: str, unit: str) -> str:
+        """Get the current temperature for a specific location"""
+        return f"The current temperature in {location} is 20 degrees {unit}"
 
-        audio_generator = await ai.conversation(user_id, audio_file)
+    async with ai as ai_instance:
+        audio_generator = await ai_instance.conversation(user_id, audio_file)
 
         return StreamingResponse(
             content=audio_generator,
@@ -51,39 +51,7 @@ async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)
         )
 ```
 
-#### Text Conversation
-
-```python
-from cyberchipped.ai import SQLiteDatabase, AI
-from fastapi import UploadFile, File
-from fastapi.responses import StreamingResponse
-import os
-from pydantic import BaseClass
-
-database = SQLiteDatabase("sqlite.db")
-
-class Text(BaseClass):
-    text: str
-
-@app.post("/conversation/{user_id}")
-async def conversation_endpoint(user_id: str, text: Text, audio_file: UploadFile = File(...)):
-    async with AI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        name="CometHeart AI Simple",
-        instructions="You are CometHeart an AI voice assistant - you answer questions and help with tasks. You keep your responses brief and tailor them for speech.",
-        database=database
-    ) as ai:
-        @ai.add_tool
-        def get_current_temperature(location: str, unit: str) -> str:
-            """Get the current temperature for a specific location"""
-            return f"The current temperature in {location} is 20 degrees {unit}"
-
-        text_generator = await ai.text(user_id, text.text)
-
-        return text_generator
-```
-
-### Run Tests
+## Run Tests
 
 ```bash
 poetry run pytest
