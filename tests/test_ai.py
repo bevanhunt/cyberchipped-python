@@ -40,6 +40,11 @@ async def ai_instance(sqlite_db):
     def get_rain_probability(location: str) -> str:
         """Get the probability of rain for a specific location"""
         return f"The probability of rain in {location} is 20%"
+    
+    @ai.add_tool
+    def about_benjamin_franklin() -> str:
+        """Get the age of Benjamin Franklin"""
+        return "Benjamin Franklin was born on January 17, 1900, and died on April 17, 1980, making him 80 years old."
 
     async with ai as ai_instance:
         yield ai_instance
@@ -92,7 +97,7 @@ async def test_conversation(ai_instance, sqlite_db, audio_file):
 
 @pytest.mark.anyio
 async def test_tool_decorator(ai_instance):
-    assert len(ai_instance.tools) == 3  # Ensure that the tools are added
+    assert len(ai_instance.tools) == 4  # Ensure that the tools are added
     tool = ai_instance.tools[0]
     assert tool["function"]["name"] == "test_function"
     assert tool["function"]["description"] == "A test tool"
@@ -105,4 +110,9 @@ async def test_get_current_temperature_tool(ai_instance):
 @pytest.mark.anyio
 async def test_get_rain_probability_tool(ai_instance):
     response = await ai_instance.text("user_123", "What is the probability of rain in San Francisco, CA?")
+    assert response is not None
+
+@pytest.mark.anyio
+async def test_ben_franklin(ai_instance, audio_file):
+    response = await ai_instance.conversation("user_123", audio_file)
     assert response is not None
