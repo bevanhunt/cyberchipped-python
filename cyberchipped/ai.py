@@ -9,6 +9,7 @@ import openai
 import aiosqlite
 from fastapi import UploadFile
 from openai import AssistantEventHandler
+from openai.types.beta.threads import Text, TextDelta
 from typing_extensions import override
 import sqlite3
 import inspect
@@ -27,48 +28,22 @@ sqlite3.register_converter("timestamp", convert_datetime)
 
 
 class EventHandler(AssistantEventHandler):
-    def __init__(self, tool_handlers):
+    def __init__(self, tool_handlers, ai_instance):
         super().__init__()
         self.tool_handlers = tool_handlers
+        self.ai_instance = ai_instance
+        self.accumulated_value = ""
+
+    @override
+    def on_text_delta(self, delta: TextDelta, snapshot: Text):
+        self.ai_instance.accumulated_value += delta.value
 
     @override
     def on_event(self, event):
-        print(f"Event received: {event.event}")
         if event.event == 'thread.run.requires_action':
             run_id = event.data.id  # Retrieve the run ID from the event data
-            self.handle_requires_action(event.data, run_id)
+            self.ai_instance.handle_requires_action(event.data, run_id)
 
-    def handle_requires_action(self, data, run_id):
-        tool_outputs = []
-        print("Handling requires action")
-        print(data)
-
-        for tool in data.required_action.submit_tool_outputs.tool_calls:
-            print(f"Tool: {tool.function.name}")
-            print(tool.function.name, self.tool_handlers)
-            if tool.function.name in self.tool_handlers:
-                handler = self.tool_handlers[tool.function.name]
-                inputs = json.loads(tool.function.arguments)
-                output = handler(**inputs)
-                print(f"Output: {output}")
-                tool_outputs.append({"tool_call_id": tool.id, "output": output})
-
-        print(f"Submitting tool outputs: {tool_outputs}")
-
-        # Submit all tool_outputs at the same time
-        self.submit_tool_outputs(tool_outputs, run_id)
-
-    def submit_tool_outputs(self, tool_outputs, run_id):
-        # Use the submit_tool_outputs_stream helper
-        with openai.beta.threads.runs.submit_tool_outputs_stream(
-            thread_id=self.current_run.thread_id,
-            run_id=self.current_run.id,
-            tool_outputs=tool_outputs,
-            event_handler=EventHandler(self.tool_handlers),
-        ) as stream:
-            for text in stream.text_deltas:
-                print(text, end="", flush=True)
-            print()
 
 class ToolConfig(BaseModel):
     name: str
@@ -169,6 +144,7 @@ class AI:
         self.assistant_id = None
         self.database = database
         self.client = OpenAI()
+        self.accumulated_value = ""
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()
@@ -218,25 +194,21 @@ class AI:
             thread_id = await self.create_thread(user_id)
 
         self.current_thread_id = thread_id
+        event_handler = EventHandler(self.tool_handlers, self)
         openai.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
             content=text,
         )
 
-        response_text = ""
         with openai.beta.threads.runs.stream(
             thread_id=thread_id,
             assistant_id=self.assistant_id,
-            event_handler=EventHandler(self.tool_handlers),
+            event_handler=event_handler,
         ) as stream:
-            for event in stream:
-                if hasattr(event.data, "delta") and hasattr(
-                    event.data.delta, "content"
-                ):
-                    for content_block in event.data.delta.content:
-                        if content_block.type == "text":
-                            response_text += content_block.text.value
+            stream.until_done()
+
+        response_text = self.accumulated_value
 
         metadata = {
             "user_id": user_id,
@@ -261,25 +233,22 @@ class AI:
 
         self.current_thread_id = thread_id
         transcript = await self.listen(audio_file)
+        event_handler = EventHandler(self.tool_handlers, self)
         openai.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
             content=transcript,
         )
 
-        response_text = ""
         with openai.beta.threads.runs.stream(
             thread_id=thread_id,
             assistant_id=self.assistant_id,
-            event_handler=EventHandler(self.tool_handlers),
+            event_handler=event_handler,
         ) as stream:
-            for event in stream:
-                if hasattr(event.data, "delta") and hasattr(
-                    event.data.delta, "content"
-                ):
-                    for content_block in event.data.delta.content:
-                        if content_block.type == "text":
-                            response_text += content_block.text.value
+            stream.until_done()
+
+        response_text = self.accumulated_value
+        print("fucking text", response_text)
 
         metadata = {
             "user_id": user_id,
@@ -298,6 +267,32 @@ class AI:
         )
 
         return response.response.iter_bytes()
+
+    def handle_requires_action(self, data, run_id):
+        tool_outputs = []
+
+        for tool in data.required_action.submit_tool_outputs.tool_calls:
+            if tool.function.name in self.tool_handlers:
+                handler = self.tool_handlers[tool.function.name]
+                inputs = json.loads(tool.function.arguments)
+                output = handler(**inputs)
+                tool_outputs.append({"tool_call_id": tool.id, "output": output})
+
+
+        # Submit all tool_outputs at the same time
+        self.submit_tool_outputs(tool_outputs, run_id)
+
+    def submit_tool_outputs(self, tool_outputs, run_id):
+        # Use the submit_tool_outputs_stream helper
+        with openai.beta.threads.runs.submit_tool_outputs_stream(
+            thread_id=self.current_thread_id,
+            run_id=run_id,
+            tool_outputs=tool_outputs,
+            event_handler=EventHandler(self.tool_handlers, self),
+        ) as stream:
+            for text in stream.text_deltas:
+                print(text, end="", flush=True)
+            print()
 
     def add_tool(self, func: Callable):
         sig = inspect.signature(func)
