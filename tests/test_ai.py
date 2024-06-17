@@ -113,6 +113,6 @@ async def test_get_rain_probability_tool(ai_instance):
     assert response is not None
 
 @pytest.mark.anyio
-async def test_get_rain_probability_tool(ai_instance, audio_file):
+async def test_ben_franklin(ai_instance, audio_file):
     response = await ai_instance.conversation("user_123", audio_file)
     assert response is not None
