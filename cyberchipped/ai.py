@@ -248,7 +248,6 @@ class AI:
             stream.until_done()
 
         response_text = self.accumulated_value
-        print("fucking text", response_text)
 
         metadata = {
             "user_id": user_id,
