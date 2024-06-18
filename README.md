@@ -8,7 +8,7 @@
 
 ## Introduction
 
-CyberChipped powers the best AI Companion - [CometHeart](https://cometheart.com)!
+CyberChipped powers the best AIs - [CometHeart](https://cometheart.com) and [WalletBubbles](https://walletbubbles.com)!
 
 In a few lines of code build a conversational AI Assistant!
 
@@ -43,11 +43,11 @@ async def conversation_endpoint(user_id: str, audio_file: UploadFile = File(...)
         return f"The current temperature in {location} is 20 degrees {unit}"
 
     async with ai as ai_instance:
-        audio_generator = await ai_instance.conversation(user_id, audio_file)
+        audio_generator = await ai_instance.conversation(user_id, audio_file, "nova", "opus")
 
         return StreamingResponse(
             content=audio_generator,
-            media_type="audio/x-aac",
+            media_type="audio/webm",
         )
 ```
 
