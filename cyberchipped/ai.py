@@ -6,7 +6,7 @@ import time
 from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 import openai
 import aiosqlite
 from fastapi import UploadFile
@@ -152,15 +152,14 @@ class SQLiteDatabase:
 
 class AI:
     def __init__(self, api_key: str, name: str, instructions: str, database: Any):
-        openai.api_key = api_key
+        self.client = AsyncOpenAI(api_key=api_key)
         self.name = name
         self.instructions = instructions
-        self.model = "gpt-4o"
+        self.model = "gpt-4-1106-preview"
         self.tools = [{"type": "code_interpreter"}]
         self.tool_handlers = {}
         self.assistant_id = None
         self.database = database
-        self.client = OpenAI()
         self.accumulated_value = ""
 
     async def __aenter__(self):
@@ -213,48 +212,31 @@ class AI:
         self.current_thread_id = thread_id
 
         # Create a message in the thread
-        await asyncio.to_thread(
-            openai.beta.threads.messages.create,
+        await self.client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
             content=text,
         )
 
-        # Create a run
-        run = await asyncio.to_thread(
-            openai.beta.threads.runs.create,
+        # Create a run with streaming
+        stream = await self.client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=self.assistant_id,
+            stream=True
         )
 
         accumulated_response = []
 
-        while True:
-            run_status = await asyncio.to_thread(
-                openai.beta.threads.runs.retrieve,
-                thread_id=thread_id,
-                run_id=run.id
-            )
-            
-            if run_status.status == "completed":
-                messages = await asyncio.to_thread(
-                    openai.beta.threads.messages.list,
-                    thread_id=thread_id
-                )
-                latest_message = next((msg for msg in messages.data if msg.role == "assistant"), None)
-                if latest_message:
-                    for content in latest_message.content:
-                        if content.type == "text":
-                            chunk = content.text.value
-                            accumulated_response.append(chunk)
-                            yield chunk
+        async for chunk in stream:
+            if chunk.type == "thread.message.delta":
+                if chunk.delta.content:
+                    for content_delta in chunk.delta.content:
+                        if content_delta.type == "text_delta":
+                            chunk_text = content_delta.text
+                            accumulated_response.append(chunk_text)
+                            yield chunk_text
+            elif chunk.type == "thread.run.completed":
                 break
-            elif run_status.status == "requires_action":
-                # Handle tool calls if needed
-                pass
-            
-            await asyncio.sleep(0.5)
-            yield " "  # Yield an empty space to keep the connection alive
 
         # Save the message to the database
         metadata = {
