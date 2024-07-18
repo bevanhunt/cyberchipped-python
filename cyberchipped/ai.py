@@ -6,7 +6,7 @@ import time
 from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
-from openai import AsyncOpenAI, OpenAI
+from openai import OpenAI
 import openai
 import aiosqlite
 from fastapi import UploadFile
@@ -152,7 +152,7 @@ class SQLiteDatabase:
 
 class AI:
     def __init__(self, api_key: str, name: str, instructions: str, database: Any):
-        self.client = AsyncOpenAI(api_key=api_key)
+        self.client = OpenAI(api_key=api_key)
         self.name = name
         self.instructions = instructions
         self.model = "gpt-4-1106-preview"
@@ -212,42 +212,46 @@ class AI:
         self.current_thread_id = thread_id
 
         # Create a message in the thread
-        await self.client.beta.threads.messages.create(
+        self.client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
             content=text,
         )
 
-        # Create a run with streaming
-        stream = await self.client.beta.threads.runs.create(
-            thread_id=thread_id,
-            assistant_id=self.assistant_id,
-            stream=True
-        )
-
         accumulated_response = []
 
-        async for chunk in stream:
-            if chunk.type == "thread.message.delta":
-                if chunk.delta.content:
-                    for content_delta in chunk.delta.content:
-                        if content_delta.type == "text_delta":
-                            chunk_text = content_delta.text
-                            accumulated_response.append(chunk_text)
-                            yield chunk_text
-            elif chunk.type == "thread.run.completed":
-                break
+        class CustomEventHandler(EventHandler):
+            def __init__(self, tool_handlers, ai_instance, accumulated_response):
+                super().__init__(tool_handlers, ai_instance)
+                self.accumulated_response = accumulated_response
+
+            def on_text_delta(self, delta, snapshot):
+                self.accumulated_response.append(delta.value)
+                self.ai_instance.accumulated_value += delta.value
+
+        event_handler = CustomEventHandler(self.tool_handlers, self, accumulated_response)
+
+        with self.client.beta.threads.runs.stream(
+            thread_id=thread_id,
+            assistant_id=self.assistant_id,
+            event_handler=event_handler,
+        ) as stream:
+            for text in stream.text_deltas:
+                yield text
+            stream.until_done()
+
+        response_text = "".join(accumulated_response)
 
         # Save the message to the database
         metadata = {
             "user_id": user_id,
             "message": text,
-            "response": "".join(accumulated_response),
+            "response": response_text,
             "timestamp": datetime.now(),
         }
         
         await self.database.save_message(user_id, metadata)
-
+        
     async def conversation(
         self,
         user_id: str,
