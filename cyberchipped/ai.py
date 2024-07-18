@@ -14,13 +14,16 @@ from typing_extensions import override
 import sqlite3
 import inspect
 
+
 # Custom adapter for datetime
 def adapt_datetime(ts):
     return ts.isoformat()
 
+
 # Custom converter for datetime
 def convert_datetime(ts):
     return datetime.fromisoformat(ts)
+
 
 # Register the adapter and converter
 sqlite3.register_adapter(datetime, adapt_datetime)
@@ -40,7 +43,7 @@ class EventHandler(AssistantEventHandler):
 
     @override
     def on_event(self, event):
-        if event.event == 'thread.run.requires_action':
+        if event.event == "thread.run.requires_action":
             run_id = event.data.id  # Retrieve the run ID from the event data
             self.ai_instance.handle_requires_action(event.data, run_id)
 
@@ -81,13 +84,19 @@ class SQLiteDatabase:
     def __init__(self, db_path: str):
         self.db_path = db_path
         conn = sqlite3.connect(db_path)
-        conn.execute("CREATE TABLE IF NOT EXISTS threads (user_id TEXT, thread_id TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS messages (user_id TEXT, message TEXT, response TEXT, timestamp TEXT)")
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS threads (user_id TEXT, thread_id TEXT)"
+        )
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS messages (user_id TEXT, message TEXT, response TEXT, timestamp TEXT)"
+        )
         conn.commit()
         conn.close()
 
     async def save_thread_id(self, user_id: str, thread_id: str):
-        async with aiosqlite.connect(self.db_path, detect_types=sqlite3.PARSE_DECLTYPES) as db:
+        async with aiosqlite.connect(
+            self.db_path, detect_types=sqlite3.PARSE_DECLTYPES
+        ) as db:
             await db.execute(
                 "INSERT INTO threads (user_id, thread_id) VALUES (?, ?)",
                 (user_id, thread_id),
@@ -95,7 +104,9 @@ class SQLiteDatabase:
             await db.commit()
 
     async def get_thread_id(self, user_id: str) -> Optional[str]:
-        async with aiosqlite.connect(self.db_path, detect_types=sqlite3.PARSE_DECLTYPES) as db:
+        async with aiosqlite.connect(
+            self.db_path, detect_types=sqlite3.PARSE_DECLTYPES
+        ) as db:
             async with db.execute(
                 "SELECT thread_id FROM threads WHERE user_id = ?", (user_id,)
             ) as cursor:
@@ -103,7 +114,9 @@ class SQLiteDatabase:
                 return row[0] if row else None
 
     async def save_message(self, user_id: str, metadata: Dict[str, Any]):
-        async with aiosqlite.connect(self.db_path, detect_types=sqlite3.PARSE_DECLTYPES) as db:
+        async with aiosqlite.connect(
+            self.db_path, detect_types=sqlite3.PARSE_DECLTYPES
+        ) as db:
             await db.execute(
                 "INSERT INTO messages (user_id, message, response, timestamp) VALUES (?, ?, ?, ?)",
                 (
@@ -116,7 +129,9 @@ class SQLiteDatabase:
             await db.commit()
 
     async def delete_thread_id(self, user_id: str):
-        async with aiosqlite.connect(self.db_path, detect_types=sqlite3.PARSE_DECLTYPES) as db:
+        async with aiosqlite.connect(
+            self.db_path, detect_types=sqlite3.PARSE_DECLTYPES
+        ) as db:
             async with db.execute(
                 "SELECT thread_id FROM threads WHERE user_id = ?", (user_id,)
             ) as cursor:
@@ -139,7 +154,7 @@ class AI:
         self.name = name
         self.instructions = instructions
         self.model = "gpt-4o"
-        self.tools = []
+        self.tools = [{"type": "code_interpreter"}]
         self.tool_handlers = {}
         self.assistant_id = None
         self.database = database
@@ -186,7 +201,7 @@ class AI:
             model="whisper-1", file=(f"file.{extension}", audio_file.file)
         )
         return transcription.text
-    
+
     async def text(self, user_id: str, text: str):
         thread_id = await self.database.get_thread_id(user_id)
 
@@ -221,11 +236,13 @@ class AI:
 
         return response_text
 
-    async def conversation(self, 
-                           user_id: str, 
-                           audio_file: UploadFile,
-                           voice: Literal['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] = 'nova',
-                           response_format: Literal['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm'] = 'mp3'):
+    async def conversation(
+        self,
+        user_id: str,
+        audio_file: UploadFile,
+        voice: Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"] = "nova",
+        response_format: Literal["mp3", "opus", "aac", "flac", "wav", "pcm"] = "mp3",
+    ):
         thread_id = await self.database.get_thread_id(user_id)
 
         if thread_id is None:
@@ -277,7 +294,6 @@ class AI:
                 output = handler(**inputs)
                 tool_outputs.append({"tool_call_id": tool.id, "output": output})
 
-
         # Submit all tool_outputs at the same time
         self.submit_tool_outputs(tool_outputs, run_id)
 
@@ -300,7 +316,14 @@ class AI:
             parameters["properties"][name] = {"type": "string", "description": "foo"}
             if param.default == inspect.Parameter.empty:
                 parameters["required"].append(name)
-        tool_config = {"type": "function", "function": {"name": func.__name__, "description": func.__doc__ or "", "parameters": parameters}}
+        tool_config = {
+            "type": "function",
+            "function": {
+                "name": func.__name__,
+                "description": func.__doc__ or "",
+                "parameters": parameters,
+            },
+        }
         self.tools.append(tool_config)
         self.tool_handlers[func.__name__] = func
         return func
