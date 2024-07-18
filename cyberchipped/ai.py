@@ -1,7 +1,9 @@
+import asyncio
 import json
 import mimetypes
 from datetime import datetime
-from typing import Literal, Optional, Dict, Any, Callable
+import time
+from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 from openai import OpenAI
@@ -202,39 +204,67 @@ class AI:
         )
         return transcription.text
 
-    async def text(self, user_id: str, text: str):
+    async def text(self, user_id: str, text: str) -> AsyncGenerator[str, None]:
         thread_id = await self.database.get_thread_id(user_id)
 
         if thread_id is None:
             thread_id = await self.create_thread(user_id)
 
         self.current_thread_id = thread_id
-        event_handler = EventHandler(self.tool_handlers, self)
-        openai.beta.threads.messages.create(
+
+        # Create a message in the thread
+        await asyncio.to_thread(
+            openai.beta.threads.messages.create,
             thread_id=thread_id,
             role="user",
             content=text,
         )
 
-        with openai.beta.threads.runs.stream(
+        # Create a run
+        run = await asyncio.to_thread(
+            openai.beta.threads.runs.create,
             thread_id=thread_id,
             assistant_id=self.assistant_id,
-            event_handler=event_handler,
-        ) as stream:
-            stream.until_done()
+        )
 
-        response_text = self.accumulated_value
+        accumulated_response = []
 
+        while True:
+            run_status = await asyncio.to_thread(
+                openai.beta.threads.runs.retrieve,
+                thread_id=thread_id,
+                run_id=run.id
+            )
+            
+            if run_status.status == "completed":
+                messages = await asyncio.to_thread(
+                    openai.beta.threads.messages.list,
+                    thread_id=thread_id
+                )
+                latest_message = next((msg for msg in messages.data if msg.role == "assistant"), None)
+                if latest_message:
+                    for content in latest_message.content:
+                        if content.type == "text":
+                            chunk = content.text.value
+                            accumulated_response.append(chunk)
+                            yield chunk
+                break
+            elif run_status.status == "requires_action":
+                # Handle tool calls if needed
+                pass
+            
+            await asyncio.sleep(0.5)
+            yield " "  # Yield an empty space to keep the connection alive
+
+        # Save the message to the database
         metadata = {
             "user_id": user_id,
             "message": text,
-            "response": response_text,
+            "response": "".join(accumulated_response),
             "timestamp": datetime.now(),
         }
-
+        
         await self.database.save_message(user_id, metadata)
-
-        return response_text
 
     async def conversation(
         self,
