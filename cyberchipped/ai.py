@@ -155,7 +155,7 @@ class AI:
         self.client = OpenAI(api_key=api_key)
         self.name = name
         self.instructions = instructions
-        self.model = "gpt-4-1106-preview"
+        self.model = "gpt-4o-mini"
         self.tools = [{"type": "code_interpreter"}]
         self.tool_handlers = {}
         self.assistant_id = None
