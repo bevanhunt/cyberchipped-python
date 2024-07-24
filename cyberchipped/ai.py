@@ -1,7 +1,7 @@
 import json
 import mimetypes
 from datetime import datetime
-from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
+from typing import AsyncGenerator, Literal, Optional, List, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 from openai import OpenAI
@@ -15,9 +15,7 @@ from typing_extensions import override
 import sqlite3
 import inspect
 from z3 import Bool, Implies, Solver, sat
-from pylog.logic_variables import n_Vars, unify
-from pylog.sequence_options.sequences import PyList
-from pylog.sequence_options.super_sequence import member, members
+from pylog.logic_variables import unify, var
 
 
 def pylog_query(query: str) -> str:
@@ -26,35 +24,49 @@ def pylog_query(query: str) -> str:
     """
     try:
         # Parse the query string
-        query_parts = query.strip().split('(')
-        predicate = query_parts[0]
-        args = query_parts[1].rstrip(')').split(',')
-
-        # Set up variables
-        vars = n_Vars(len(args))
+        predicate, args = parse_query(query)
 
         # Execute the query based on the predicate
         if predicate == "member":
-            if len(args) != 2:
-                raise ValueError("member/2 predicate requires 2 arguments")
-            list_arg = eval(args[1].strip())  # Be cautious with eval!
-            results = list(member(vars[0], PyList(list_arg)))
+            results = execute_member_query(args)
         else:
             raise ValueError(f"Unsupported predicate: {predicate}")
 
-        # Process results
+        # Process and return results
         if results:
-            processed_results = []
-            for result in results:
-                processed_result = {}
-                for i, var in enumerate(vars):
-                    processed_result[f"X{i+1}"] = str(var.get_py_value())
-                processed_results.append(processed_result)
-            return json.dumps(processed_results)
+            return json.dumps(results)
         else:
             return "No results found."
     except Exception as e:
         return f"Error executing PyLog query: {str(e)}"
+
+
+def parse_query(query: str) -> tuple:
+    """Parse the Prolog-like query string."""
+    query_parts = query.strip().split('(')
+    predicate = query_parts[0]
+    args = query_parts[1].rstrip(')').split(',')
+    return predicate, [arg.strip() for arg in args]
+
+
+def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
+    """Execute a member query."""
+    if len(args) != 2:
+        raise ValueError("member/2 predicate requires 2 arguments")
+
+    X = var('X')
+    list_arg = eval(args[1])  # Be cautious with eval!
+
+    results = []
+    for item in list_arg:
+        try:
+            unification = unify(X, item)
+            if unification:
+                results.append({"X": str(unification[X])})
+        except:
+            pass
+
+    return results
 
 
 def english_to_logic(argument: str) -> str:
