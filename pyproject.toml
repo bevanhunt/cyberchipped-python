@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cyberchipped"
-version = "1.5.2"
+version = "1.5.3"
 description = "Build AI Assistants Fast"
 authors = ["Bevan Hunt <bevan@bevanhunt.com>"]
 license = "Apache-2.0"
@@ -23,7 +23,7 @@ motor = "^3.5.1"
 aiosqlite = "^0.20.0"
 fastapi = "^0.111.0"
 z3-solver = "^4.13.0.0"
-pyswip = "^0.2.10"
+pylog = "^1.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

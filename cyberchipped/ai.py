@@ -10,37 +10,51 @@ import aiosqlite
 from fastapi import UploadFile
 from openai import AssistantEventHandler
 from openai.types.beta.threads import Text, TextDelta
+import pylog.control_structures
 from typing_extensions import override
 import sqlite3
 import inspect
 from z3 import Bool, Implies, Solver, sat
-from pyswip import Prolog
+from pylog.logic_variables import n_Vars, unify
+from pylog.sequence_options.sequences import PyList
+from pylog.sequence_options.super_sequence import member, members
 
 
-def prolog_query(query: str) -> str:
+def pylog_query(query: str) -> str:
     """
-    Execute a Prolog query and return the results as a string.
+    Execute a PyLog query and return the results as a string.
     """
-    prolog = Prolog()
     try:
-        results = list(prolog.query(query))
+        # Parse the query string
+        query_parts = query.strip().split('(')
+        predicate = query_parts[0]
+        args = query_parts[1].rstrip(')').split(',')
+
+        # Set up variables
+        vars = n_Vars(len(args))
+
+        # Execute the query based on the predicate
+        if predicate == "member":
+            if len(args) != 2:
+                raise ValueError("member/2 predicate requires 2 arguments")
+            list_arg = eval(args[1].strip())  # Be cautious with eval!
+            results = list(member(vars[0], PyList(list_arg)))
+        else:
+            raise ValueError(f"Unsupported predicate: {predicate}")
+
+        # Process results
         if results:
-            # Handle the case where results are not in the expected format
             processed_results = []
             for result in results:
                 processed_result = {}
-                for key, value in result.items():
-                    if isinstance(value, str) and value.startswith("'") and value.endswith("'"):
-                        processed_result[key] = value[1:-1]
-                    else:
-                        # Convert all values to strings
-                        processed_result[key] = str(value)
+                for i, var in enumerate(vars):
+                    processed_result[f"X{i+1}"] = str(var.get_py_value())
                 processed_results.append(processed_result)
             return json.dumps(processed_results)
         else:
             return "No results found."
     except Exception as e:
-        return f"Error executing Prolog query: {str(e)}"
+        return f"Error executing PyLog query: {str(e)}"
 
 
 def english_to_logic(argument: str) -> str:
@@ -239,7 +253,7 @@ class AI:
         self.database = database
         self.accumulated_value = ""
         self.add_tool(english_to_logic)
-        self.add_tool(prolog_query)
+        self.add_tool(pylog_query)
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()

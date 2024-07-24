@@ -705,6 +705,17 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pylog"
+version = "1.1"
+description = "Python implementation of Prolog features."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pylog-1.1-py3-none-any.whl", hash = "sha256:e04ebdad682d48746f2c20a25896b8919feb6481c5507a1c0afb346565b5d7b3"},
+    {file = "pylog-1.1.tar.gz", hash = "sha256:a053aa2e8d885691dd3585a3e3192b24a03af6298f557ba4907213f27a1ef415"},
+]
+
+[[package]]
 name = "pymongo"
 version = "4.8.0"
 description = "Python driver for MongoDB <http://www.mongodb.org>"
@@ -775,17 +786,6 @@ ocsp = ["certifi", "cryptography (>=2.5)", "pyopenssl (>=17.2.0)", "requests (<3
 snappy = ["python-snappy"]
 test = ["pytest (>=7)"]
 zstd = ["zstandard"]
-
-[[package]]
-name = "pyswip"
-version = "0.2.10"
-description = "PySwip enables querying SWI-Prolog in your Python programs."
-optional = false
-python-versions = "*"
-files = [
-    {file = "pyswip-0.2.10-py2.py3-none-any.whl", hash = "sha256:7abc3009f8badc7d0c23d72422960e9f229059a731430c9acd7e9a718cbd2832"},
-    {file = "pyswip-0.2.10.tar.gz", hash = "sha256:7698584ddf73d051d22d5fed728b9e89bb444a9d384d48c9f5e6fd7060bbdb9f"},
-]
 
 [[package]]
 name = "pytest"
@@ -1316,4 +1316,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11"
-content-hash = "7e63042410b9f582ad9d9fe2d581bc238d6bb1888e54ca00d592920e04b9cca4"
+content-hash = "4cf236733f3072ab40b501c8fa7d2f00234ba8c1be625cdc2ff3016760f1b012"
