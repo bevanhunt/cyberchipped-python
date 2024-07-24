@@ -10,7 +10,6 @@ import aiosqlite
 from fastapi import UploadFile
 from openai import AssistantEventHandler
 from openai.types.beta.threads import Text, TextDelta
-import pylog.control_structures
 from typing_extensions import override
 import sqlite3
 import inspect
