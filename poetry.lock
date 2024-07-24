@@ -777,6 +777,17 @@ test = ["pytest (>=7)"]
 zstd = ["zstandard"]
 
 [[package]]
+name = "pyswip"
+version = "0.2.10"
+description = "PySwip enables querying SWI-Prolog in your Python programs."
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyswip-0.2.10-py2.py3-none-any.whl", hash = "sha256:7abc3009f8badc7d0c23d72422960e9f229059a731430c9acd7e9a718cbd2832"},
+    {file = "pyswip-0.2.10.tar.gz", hash = "sha256:7698584ddf73d051d22d5fed728b9e89bb444a9d384d48c9f5e6fd7060bbdb9f"},
+]
+
+[[package]]
 name = "pytest"
 version = "8.3.1"
 description = "pytest: simple powerful testing with Python"
@@ -1305,4 +1316,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11"
-content-hash = "81df1eb8e508642878184b87ab273180c645d2d707ff783befd1de1a0d44b551"
+content-hash = "7e63042410b9f582ad9d9fe2d581bc238d6bb1888e54ca00d592920e04b9cca4"

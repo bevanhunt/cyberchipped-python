@@ -14,6 +14,23 @@ from typing_extensions import override
 import sqlite3
 import inspect
 from z3 import Bool, Implies, Solver, sat
+from pyswip import Prolog
+
+
+def prolog_query(query: str):
+    """
+    Execute a Prolog query and return the results.
+    """
+    prolog = Prolog()
+    try:
+        results = list(prolog.query(query))
+        if results:
+            return json.dumps(results)
+        else:
+            return "No results found."
+    except Exception as e:
+        return f"Error executing Prolog query: {str(e)}"
+
 
 def english_to_logic(argument: str):
     """
@@ -21,40 +38,40 @@ def english_to_logic(argument: str):
     """
     # This is a simplified example. You'll need to implement more sophisticated
     # natural language processing to handle complex arguments.
-    
+
     # For this example, we'll assume a simple argument structure:
     # "If A, then B. A is true. Therefore, B is true."
-    
+
     parts = argument.split('. ')
     if len(parts) != 3:
         return "Invalid argument structure. Please use the format: 'If A, then B. A is true. Therefore, B is true.'"
-    
+
     # Extract A and B
     if_then = parts[0].split(', then ')
     if len(if_then) != 2 or not if_then[0].startswith("If "):
         return "Invalid 'If-then' statement."
-    
+
     A = if_then[0][3:]  # Remove "If "
     B = if_then[1]
-    
+
     # Create Z3 boolean variables
     a = Bool('A')
     b = Bool('B')
-    
+
     # Create the implication
     implication = Implies(a, b)
-    
+
     # Check if A is stated to be true
     a_is_true = parts[1] == f"{A} is true"
-    
+
     # Check the conclusion
     conclusion = parts[2] == f"Therefore, {B} is true"
-    
+
     # Create a Z3 solver
     s = Solver()
     s.add(implication)
     s.add(a == a_is_true)
-    
+
     # Check if the argument is valid
     if s.check() == sat:
         model = s.model()
@@ -211,6 +228,7 @@ class AI:
         self.database = database
         self.accumulated_value = ""
         self.add_tool(english_to_logic)
+        self.add_tool(prolog_query)
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()
@@ -279,7 +297,8 @@ class AI:
                 self.accumulated_response.append(delta.value)
                 self.ai_instance.accumulated_value += delta.value
 
-        event_handler = CustomEventHandler(self.tool_handlers, self, accumulated_response)
+        event_handler = CustomEventHandler(
+            self.tool_handlers, self, accumulated_response)
 
         with self.client.beta.threads.runs.stream(
             thread_id=thread_id,
@@ -299,15 +318,17 @@ class AI:
             "response": response_text,
             "timestamp": datetime.now(),
         }
-        
+
         await self.database.save_message(user_id, metadata)
-        
+
     async def conversation(
         self,
         user_id: str,
         audio_file: UploadFile,
-        voice: Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"] = "nova",
-        response_format: Literal["mp3", "opus", "aac", "flac", "wav", "pcm"] = "mp3",
+        voice: Literal["alloy", "echo", "fable",
+                       "onyx", "nova", "shimmer"] = "nova",
+        response_format: Literal["mp3", "opus",
+                                 "aac", "flac", "wav", "pcm"] = "mp3",
     ):
         thread_id = await self.database.get_thread_id(user_id)
 
@@ -358,7 +379,8 @@ class AI:
                 handler = self.tool_handlers[tool.function.name]
                 inputs = json.loads(tool.function.arguments)
                 output = handler(**inputs)
-                tool_outputs.append({"tool_call_id": tool.id, "output": output})
+                tool_outputs.append(
+                    {"tool_call_id": tool.id, "output": output})
 
         # Submit all tool_outputs at the same time
         self.submit_tool_outputs(tool_outputs, run_id)
@@ -379,7 +401,8 @@ class AI:
         sig = inspect.signature(func)
         parameters = {"type": "object", "properties": {}, "required": []}
         for name, param in sig.parameters.items():
-            parameters["properties"][name] = {"type": "string", "description": "foo"}
+            parameters["properties"][name] = {
+                "type": "string", "description": "foo"}
             if param.default == inspect.Parameter.empty:
                 parameters["required"].append(name)
         tool_config = {
