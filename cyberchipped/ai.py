@@ -71,7 +71,7 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
     if len(args) != 2:
         raise ValueError("member/2 predicate requires 2 arguments")
 
-    X = Var('X')
+    X = Var()  # Create a Var without arguments
     try:
         list_arg = eval(args[1])  # Be cautious with eval!
         if not isinstance(list_arg, (list, tuple)):
@@ -85,8 +85,8 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
         try:
             unification = unify(X, item)
             if unification:
-                results.append({"X": str(unification[X])})
-        except Exception:
+                results.append({"X": str(unification.get(X, item))})
+        except Exception as e:
             pass  # Silently skip failed unifications
 
     return results
