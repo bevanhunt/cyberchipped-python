@@ -39,7 +39,9 @@ def parse_natural_query(query: str) -> Tuple[str, List[str]]:
     if "in" in query or "member of" in query or "belongs to" in query:
         predicate = "member"
         parts = query.replace("?", "").split()
-        item = parts[0].strip("'\"")  # Remove quotes from the item
+        item = next(part for part in parts if part not in [
+                    "is", "in", "member", "of", "belongs", "to"])
+        item = item.strip("'\"")  # Remove quotes from the item
         list_start = query.index("[")
         list_end = query.rindex("]") + 1
         list_str = query[list_start:list_end]
@@ -52,7 +54,7 @@ def format_results(results: List[Dict[str, str]], item: str, list_str: str) -> s
     """Format the results into a readable string."""
     if results:
         if len(results) == 1:
-            return f"Yes, {results[0]['X']} is a member of the list {list_str}."
+            return f"Yes, {item} is a member of the list {list_str}."
         else:
             items = ", ".join(result['X'] for result in results)
             return f"The following items are members of the list {list_str}: {items}"
@@ -65,9 +67,9 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
     if len(args) != 2:
         raise ValueError("member/2 predicate requires 2 arguments")
 
-    item = args[0]
+    # Convert item to lowercase for case-insensitive comparison
+    item = args[0].lower()
     try:
-        # Use ast.literal_eval instead of eval for safer parsing
         list_arg = ast.literal_eval(args[1])
         if not isinstance(list_arg, (list, tuple)):
             raise ValueError(f"Second argument must be a list or tuple, got: {
@@ -78,8 +80,9 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
     results = []
     for list_item in list_arg:
         if isinstance(list_item, str):
-            list_item = list_item.strip("'\"")  # Remove quotes from list items
-        if str(list_item).lower() == item.lower():  # Case-insensitive comparison
+            # Remove quotes and convert to lowercase
+            list_item = list_item.strip("'\"").lower()
+        if str(list_item).lower() == item:  # Case-insensitive comparison
             results.append({"X": str(list_item)})
 
     return results
