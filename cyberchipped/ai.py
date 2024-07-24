@@ -17,22 +17,33 @@ from z3 import Bool, Implies, Solver, sat
 from pyswip import Prolog
 
 
-def prolog_query(query: str):
+def prolog_query(query: str) -> str:
     """
-    Execute a Prolog query and return the results.
+    Execute a Prolog query and return the results as a string.
     """
     prolog = Prolog()
     try:
         results = list(prolog.query(query))
         if results:
-            return json.dumps(results)
+            # Handle the case where results are not in the expected format
+            processed_results = []
+            for result in results:
+                processed_result = {}
+                for key, value in result.items():
+                    if isinstance(value, str) and value.startswith("'") and value.endswith("'"):
+                        processed_result[key] = value[1:-1]
+                    else:
+                        # Convert all values to strings
+                        processed_result[key] = str(value)
+                processed_results.append(processed_result)
+            return json.dumps(processed_results)
         else:
             return "No results found."
     except Exception as e:
         return f"Error executing Prolog query: {str(e)}"
 
 
-def english_to_logic(argument: str):
+def english_to_logic(argument: str) -> str:
     """
     Convert an English argument to logical form and check if it's true or false using Z3.
     """
