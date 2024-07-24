@@ -19,40 +19,51 @@ from pylog.logic_variables import unify, Var
 
 def pylog_query(query: str) -> str:
     """
-    Execute a PyLog query and return the results as a string.
+    Execute a PyLog query from natural language and return the results as a string.
     """
     try:
-        # Parse the query string
-        predicate, args = parse_query(query)
+        # Parse the natural language query
+        predicate, args = parse_natural_query(query)
 
         # Execute the query based on the predicate
         if predicate == "member":
             results = execute_member_query(args)
         else:
-            raise ValueError(f"Unsupported predicate: {predicate}")
+            raise ValueError(f"Unsupported query type: {predicate}")
 
         # Process and return results
         if results:
-            return json.dumps(results)
+            return format_results(results)
         else:
             return "No results found."
     except Exception as e:
         return f"Error executing PyLog query: {str(e)}"
 
 
-def parse_query(query: str) -> Tuple[str, List[str]]:
-    """Parse the Prolog-like query string."""
-    try:
-        # Split the query into predicate and arguments
-        predicate, args_str = query.strip().split('(', 1)
+def parse_natural_query(query: str) -> Tuple[str, List[str]]:
+    """Parse the natural language query into a predicate and arguments."""
+    query = query.lower()
+    if "in" in query or "member of" in query or "belongs to" in query:
+        predicate = "member"
+        parts = query.replace("?", "").split()
+        item = parts[0]
+        list_start = query.index("[")
+        list_end = query.index("]")
+        list_str = query[list_start:list_end+1]
+        return predicate, [item, list_str]
+    else:
+        raise ValueError(f"Unsupported query format: {query}")
 
-        # Remove the closing parenthesis and split arguments
-        args_str = args_str.rstrip(')')
-        args = [arg.strip() for arg in args_str.split(',')]
 
-        return predicate.strip(), args
-    except ValueError:
-        raise ValueError(f"Invalid query format: {query}")
+def format_results(results: List[Dict[str, str]]) -> str:
+    """Format the results into a readable string."""
+    if len(results) == 1:
+        return f"Yes, {results[0]['X']} is a member of the list."
+    elif len(results) > 1:
+        items = ", ".join(result['X'] for result in results)
+        return f"The following items are members of the list: {items}"
+    else:
+        return "No matching items found in the list."
 
 
 def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
@@ -279,15 +290,26 @@ class AI:
             This function analyzes simple logical arguments in English and determines their validity.
 
             Guidelines for pylog_query:
-            1. Queries should be in the format: predicate(arg1, arg2, ...).
-            2. The predicate should be a single word, followed immediately by an opening parenthesis.
-            3. Arguments should be separated by commas.
-            4. The query should end with a closing parenthesis.
-            5. Currently, the system only supports the 'member' predicate.
+            1. Queries should be in natural language, asking about list membership.
+            2. The query should mention an item and a list.
+            3. The list should be enclosed in square brackets.
+            4. Currently, the system only supports membership queries.
 
             Examples of valid queries for pylog_query:
-            - member(X, [1, 2, 3, 4, 5])
-            - member(3, [1, 2, 3, 4, 5])
+            - "Is 3 in [1, 2, 3, 4, 5]?"
+            - "What is a member of [apple, banana, cherry]?"
+            - "Does orange belong to [apple, banana, cherry]?"
+
+            When a user asks a question about list membership:
+            1. Formulate the appropriate natural language query for pylog_query.
+            2. If unsure, ask the user for clarification on what item they're asking about and what list they're checking against.
+
+            Remember:
+            - For pylog_query, use natural language to ask about list membership.
+            - Enclose lists in square brackets.
+            - If a request can't be handled by the function, explain why and provide guidance on what's supported.
+
+            Respond with the exact string that should be passed to the pylog_query function.
 
             Guidelines for english_to_logic:
             1. The function analyzes simple logical arguments in the form of "If A, then B. A is true. Therefore, B is true."
