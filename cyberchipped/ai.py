@@ -1,7 +1,7 @@
 import json
 import mimetypes
 from datetime import datetime
-from typing import AsyncGenerator, Literal, Optional, List, Dict, Any, Callable
+from typing import AsyncGenerator, Literal, Optional, Tuple, List, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 from openai import OpenAI
@@ -40,12 +40,19 @@ def pylog_query(query: str) -> str:
         return f"Error executing PyLog query: {str(e)}"
 
 
-def parse_query(query: str) -> tuple:
+def parse_query(query: str) -> Tuple[str, List[str]]:
     """Parse the Prolog-like query string."""
-    query_parts = query.strip().split('(')
-    predicate = query_parts[0]
-    args = query_parts[1].rstrip(')').split(',')
-    return predicate, [arg.strip() for arg in args]
+    try:
+        # Split the query into predicate and arguments
+        predicate, args_str = query.strip().split('(', 1)
+
+        # Remove the closing parenthesis and split arguments
+        args_str = args_str.rstrip(')')
+        args = [arg.strip() for arg in args_str.split(',')]
+
+        return predicate.strip(), args
+    except ValueError:
+        raise ValueError(f"Invalid query format: {query}")
 
 
 def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
@@ -54,7 +61,13 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
         raise ValueError("member/2 predicate requires 2 arguments")
 
     X = Var('X')
-    list_arg = eval(args[1])  # Be cautious with eval!
+    try:
+        list_arg = eval(args[1])  # Be cautious with eval!
+        if not isinstance(list_arg, (list, tuple)):
+            raise ValueError(f"Second argument must be a list or tuple, got: {
+                             type(list_arg)}")
+    except Exception as e:
+        raise ValueError(f"Error parsing list argument: {e}")
 
     results = []
     for item in list_arg:
@@ -62,8 +75,8 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
             unification = unify(X, item)
             if unification:
                 results.append({"X": str(unification[X])})
-        except:
-            pass
+        except Exception:
+            pass  # Silently skip failed unifications
 
     return results
 
