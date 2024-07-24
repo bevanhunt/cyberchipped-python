@@ -1,8 +1,6 @@
-import asyncio
 import json
 import mimetypes
 from datetime import datetime
-import time
 from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -15,6 +13,57 @@ from openai.types.beta.threads import Text, TextDelta
 from typing_extensions import override
 import sqlite3
 import inspect
+from z3 import Bool, Implies, Solver, sat
+
+def english_to_logic(argument: str):
+    """
+    Convert an English argument to logical form and check if it's true or false using Z3.
+    """
+    # This is a simplified example. You'll need to implement more sophisticated
+    # natural language processing to handle complex arguments.
+    
+    # For this example, we'll assume a simple argument structure:
+    # "If A, then B. A is true. Therefore, B is true."
+    
+    parts = argument.split('. ')
+    if len(parts) != 3:
+        return "Invalid argument structure. Please use the format: 'If A, then B. A is true. Therefore, B is true.'"
+    
+    # Extract A and B
+    if_then = parts[0].split(', then ')
+    if len(if_then) != 2 or not if_then[0].startswith("If "):
+        return "Invalid 'If-then' statement."
+    
+    A = if_then[0][3:]  # Remove "If "
+    B = if_then[1]
+    
+    # Create Z3 boolean variables
+    a = Bool('A')
+    b = Bool('B')
+    
+    # Create the implication
+    implication = Implies(a, b)
+    
+    # Check if A is stated to be true
+    a_is_true = parts[1] == f"{A} is true"
+    
+    # Check the conclusion
+    conclusion = parts[2] == f"Therefore, {B} is true"
+    
+    # Create a Z3 solver
+    s = Solver()
+    s.add(implication)
+    s.add(a == a_is_true)
+    
+    # Check if the argument is valid
+    if s.check() == sat:
+        model = s.model()
+        if model[b] == conclusion:
+            return f"The argument is valid and true. {B} is indeed {model[b]}."
+        else:
+            return "The argument is invalid. The conclusion does not follow from the premises."
+    else:
+        return "The argument is inconsistent or invalid."
 
 
 # Custom adapter for datetime
@@ -161,6 +210,7 @@ class AI:
         self.assistant_id = None
         self.database = database
         self.accumulated_value = ""
+        self.add_tool(english_to_logic)
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()
