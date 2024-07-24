@@ -14,7 +14,7 @@ from typing_extensions import override
 import sqlite3
 import inspect
 from z3 import Bool, Implies, Solver, sat
-from pylog.logic_variables import unify, var
+from pylog.logic_variables import unify, Var
 
 
 def pylog_query(query: str) -> str:
@@ -53,7 +53,7 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
     if len(args) != 2:
         raise ValueError("member/2 predicate requires 2 arguments")
 
-    X = var('X')
+    X = Var('X')
     list_arg = eval(args[1])  # Be cautious with eval!
 
     results = []
