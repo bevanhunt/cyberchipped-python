@@ -14,7 +14,8 @@ from typing_extensions import override
 import sqlite3
 import inspect
 from z3 import Bool, Implies, Solver, sat
-from pylog.logic_variables import unify, Var
+from pylog.logic_variables import unify
+import ast
 
 
 def pylog_query(query: str) -> str:
@@ -22,20 +23,12 @@ def pylog_query(query: str) -> str:
     Execute a PyLog query from natural language and return the results as a string.
     """
     try:
-        # Parse the natural language query
         predicate, args = parse_natural_query(query)
-
-        # Execute the query based on the predicate
         if predicate == "member":
             results = execute_member_query(args)
+            return format_results(results, args[0], args[1])
         else:
             raise ValueError(f"Unsupported query type: {predicate}")
-
-        # Process and return results
-        if results:
-            return format_results(results)
-        else:
-            return "No results found."
     except Exception as e:
         return f"Error executing PyLog query: {str(e)}"
 
@@ -46,24 +39,25 @@ def parse_natural_query(query: str) -> Tuple[str, List[str]]:
     if "in" in query or "member of" in query or "belongs to" in query:
         predicate = "member"
         parts = query.replace("?", "").split()
-        item = parts[0]
+        item = parts[0].strip("'\"")  # Remove quotes from the item
         list_start = query.index("[")
-        list_end = query.index("]")
-        list_str = query[list_start:list_end+1]
+        list_end = query.rindex("]") + 1
+        list_str = query[list_start:list_end]
         return predicate, [item, list_str]
     else:
         raise ValueError(f"Unsupported query format: {query}")
 
 
-def format_results(results: List[Dict[str, str]]) -> str:
+def format_results(results: List[Dict[str, str]], item: str, list_str: str) -> str:
     """Format the results into a readable string."""
-    if len(results) == 1:
-        return f"Yes, {results[0]['X']} is a member of the list."
-    elif len(results) > 1:
-        items = ", ".join(result['X'] for result in results)
-        return f"The following items are members of the list: {items}"
+    if results:
+        if len(results) == 1:
+            return f"Yes, {results[0]['X']} is a member of the list {list_str}."
+        else:
+            items = ", ".join(result['X'] for result in results)
+            return f"The following items are members of the list {list_str}: {items}"
     else:
-        return "No matching items found in the list."
+        return f"No, {item} is not a member of the list {list_str}."
 
 
 def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
@@ -71,9 +65,10 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
     if len(args) != 2:
         raise ValueError("member/2 predicate requires 2 arguments")
 
-    X = Var()  # Create a Var without arguments
+    item = args[0]
     try:
-        list_arg = eval(args[1])  # Be cautious with eval!
+        # Use ast.literal_eval instead of eval for safer parsing
+        list_arg = ast.literal_eval(args[1])
         if not isinstance(list_arg, (list, tuple)):
             raise ValueError(f"Second argument must be a list or tuple, got: {
                              type(list_arg)}")
@@ -81,13 +76,11 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
         raise ValueError(f"Error parsing list argument: {e}")
 
     results = []
-    for item in list_arg:
-        try:
-            unification = unify(X, item)
-            if unification:
-                results.append({"X": str(unification.get(X, item))})
-        except Exception as e:
-            pass  # Silently skip failed unifications
+    for list_item in list_arg:
+        if isinstance(list_item, str):
+            list_item = list_item.strip("'\"")  # Remove quotes from list items
+        if str(list_item).lower() == item.lower():  # Case-insensitive comparison
+            results.append({"X": str(list_item)})
 
     return results
 
