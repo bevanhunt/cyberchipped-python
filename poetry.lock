@@ -705,17 +705,6 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
-name = "pylog"
-version = "1.1"
-description = "Python implementation of Prolog features."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "pylog-1.1-py3-none-any.whl", hash = "sha256:e04ebdad682d48746f2c20a25896b8919feb6481c5507a1c0afb346565b5d7b3"},
-    {file = "pylog-1.1.tar.gz", hash = "sha256:a053aa2e8d885691dd3585a3e3192b24a03af6298f557ba4907213f27a1ef415"},
-]
-
-[[package]]
 name = "pymongo"
 version = "4.8.0"
 description = "Python driver for MongoDB <http://www.mongodb.org>"
@@ -1316,4 +1305,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11"
-content-hash = "4cf236733f3072ab40b501c8fa7d2f00234ba8c1be625cdc2ff3016760f1b012"
+content-hash = "73caa526dce2f25c230e3ad71424523523ac9230a4f67d5e5b21dc7400683746"
