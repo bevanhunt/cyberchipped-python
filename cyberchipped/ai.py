@@ -309,38 +309,120 @@ class AI:
         solver = Solver()
         variables = {}
 
-        # Add premises to the solver
+        print("Adding premises to solver:")
         for premise in premises:
             if premise['type'] == 'implication':
-                antecedents = [self.get_variable(
-                    variables, ant) for ant in premise['antecedents']]
-                consequent = self.get_variable(
-                    variables, premise['consequent'])
-                solver.add(Implies(And(*antecedents), consequent))
+                self.add_implication(solver, premise, variables)
             elif premise['type'] == 'statement':
-                var = self.get_variable(variables, premise['statement'])
-                solver.add(var if premise['value'] else Not(var))
+                self.add_statement(solver, premise, variables)
 
-        # Check if the argument is valid
+        # Explicitly apply the general rule to specific instances
+        self.apply_general_rule(solver, variables, premises)
+
         conclusion_var = self.get_variable(variables, conclusion['statement'])
 
-        # Check if the negation of the conclusion is unsatisfiable
+        print("\nChecking if negation of conclusion is unsatisfiable:")
         solver.push()
-        solver.add(Not(conclusion_var)
-                   if conclusion['value'] else conclusion_var)
+        negation = Not(
+            conclusion_var) if conclusion['value'] else conclusion_var
+        solver.add(negation)
+        print(f"Added negation: {negation}")
         result = solver.check()
-        solver.pop()
+        print(f"Solver result: {result}")
 
         if result == unsat:
+            print("Negation is unsatisfiable, argument is valid_and_true")
             return "valid_and_true"
-        elif result == sat:
-            return "valid_but_not_always_true"
         else:
-            return "invalid_or_inconsistent"
+            solver.pop()
+            print("\nChecking if conclusion is satisfiable:")
+            assertion = conclusion_var if conclusion['value'] else Not(
+                conclusion_var)
+            solver.add(assertion)
+            print(f"Added assertion: {assertion}")
+            result = solver.check()
+            print(f"Solver result: {result}")
+            if result == sat:
+                print("Conclusion is satisfiable, argument is valid_but_not_always_true")
+                return "valid_but_not_always_true"
+            else:
+                print("Conclusion is unsatisfiable, argument is invalid_or_inconsistent")
+                return "invalid_or_inconsistent"
+
+    def apply_general_rule(self, solver, variables, premises):
+        general_rule = next(
+            (p for p in premises if p['type'] == 'implication'), None)
+        if general_rule:
+            entities = set()
+            for var in variables:
+                parts = var.split(' ')
+                if len(parts) == 4 and parts[1] == 'is' and parts[3] == 'than':
+                    entities.add(parts[0])
+                    entities.add(parts[3])
+
+            for x in entities:
+                for y in entities:
+                    for z in entities:
+                        if x != y and y != z and x != z:
+                            antecedents = [self.get_variable(variables, ant.replace('x', x).replace('y', y).replace('z', z))
+                                           for ant in general_rule['antecedents']]
+                            consequent = self.get_variable(variables, general_rule['consequent'].replace(
+                                'x', x).replace('y', y).replace('z', z))
+                            solver.add(Implies(And(*antecedents), consequent))
+                            print(f"Applied general rule: {
+                                Implies(And(*antecedents), consequent)}")
+
+    def add_implication(self, solver, premise, variables):
+        antecedents = [self.get_variable(variables, ant)
+                       for ant in premise['antecedents']]
+        consequent = self.get_variable(variables, premise['consequent'])
+        implication = Implies(And(*antecedents), consequent)
+        solver.add(implication)
+        print(f"Added implication: {implication}")
+
+    def add_statement(self, solver, premise, variables):
+        var = self.get_variable(variables, premise['statement'])
+        statement = var if premise['value'] else Not(var)
+        solver.add(statement)
+        print(f"Added statement: {statement}")
+
+    def add_transitivity(self, solver, variables):
+        relations = self.find_relations(variables)
+        for relation in relations:
+            entities = self.find_entities(variables, relation)
+            for x in entities:
+                for y in entities:
+                    for z in entities:
+                        if x != y and y != z and x != z:
+                            transitivity = Implies(
+                                And(self.get_variable(variables, f"{x} {relation} {y}"),
+                                    self.get_variable(variables, f"{y} {relation} {z}")),
+                                self.get_variable(
+                                    variables, f"{x} {relation} {z}")
+                            )
+                            solver.add(transitivity)
+                            print(f"Added transitivity: {transitivity}")
+
+    def find_relations(self, variables):
+        relations = set()
+        for var in variables:
+            parts = var.split(' ')
+            if len(parts) == 4 and parts[1] == 'is' and parts[3] == 'than':
+                relations.add(f"is {parts[2]} than")
+        return relations
+
+    def find_entities(self, variables, relation):
+        entities = set()
+        for var in variables:
+            parts = var.split(' ')
+            if len(parts) == 4 and f"{parts[1]} {parts[2]} {parts[3]}" == relation:
+                entities.add(parts[0])
+                entities.add(parts[3])
+        return entities
 
     def get_variable(self, variables, statement):
         if statement not in variables:
-            if "and" in statement:
+            if " and " in statement:
                 parts = statement.split(" and ")
                 return And(self.get_variable(variables, parts[0]),
                            self.get_variable(variables, parts[1]))
