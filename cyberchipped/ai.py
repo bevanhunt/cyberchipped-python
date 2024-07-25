@@ -248,27 +248,42 @@ class AI:
         if not self.check_premise_consistency(solver):
             return "invalid_or_inconsistent"
 
-        conclusion_var = self.get_or_create_var(
-            vars, parsed_argument['conclusion']['statement'])
+        conclusion_statement = parsed_argument['conclusion']['statement']
         conclusion_value = parsed_argument['conclusion']['value']
 
+        # Handle compound conclusions
+        if " and " in conclusion_statement:
+            conclusion_parts = conclusion_statement.split(" and ")
+            conclusion_vars = [self.get_or_create_var(
+                vars, part.strip()) for part in conclusion_parts]
+            conclusion_expr = And(*conclusion_vars)
+        else:
+            conclusion_expr = self.get_or_create_var(
+                vars, conclusion_statement)
+
         solver.push()
-        solver.add(Not(conclusion_var) if conclusion_value else conclusion_var)
+        solver.add(Not(conclusion_expr)
+                   if conclusion_value else conclusion_expr)
         if solver.check() == unsat:
             return "valid_and_true"
         solver.pop()
 
-        solver.add(conclusion_var if conclusion_value else Not(conclusion_var))
+        solver.add(conclusion_expr if conclusion_value else Not(conclusion_expr))
         if solver.check() == sat:
             return "valid_but_not_always_true"
         else:
             return "invalid_or_inconsistent"
 
     def interpret_result(self, result, conclusion):
+        conclusion_str = conclusion['statement']
+        if " and " in conclusion_str:
+            # Add quotes for clarity in output
+            conclusion_str = f"'{conclusion_str}'"
+
         if result == "valid_and_true":
-            return f"The argument is valid and true. {conclusion['statement']} is indeed {'true' if conclusion['value'] else 'false'}."
+            return f"The argument is valid and true. {conclusion_str} is indeed {'true' if conclusion['value'] else 'false'}."
         elif result == "valid_but_not_always_true":
-            return f"The argument is valid, but {conclusion['statement']} is not necessarily {'true' if conclusion['value'] else 'false'}."
+            return f"The argument is valid, but {conclusion_str} is not necessarily {'true' if conclusion['value'] else 'false'}."
         else:
             return "The argument is invalid or inconsistent."
 
