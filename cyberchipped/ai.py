@@ -197,261 +197,107 @@ class AI:
         # Perform any cleanup actions here
         pass
 
-    def create_z3_vars(self, statements):
-        return {stmt: Bool(stmt) for stmt in statements}
-
-    def add_implications_to_solver(self, solver, implications, vars):
-        for antecedents, consequent in implications:
-            solver.add(Implies(And(*[vars[ant]
-                       for ant in antecedents]), vars[consequent]))
-
-    def add_statements_to_solver(self, solver, statements, vars):
-        for statement, value in statements:
-            solver.add(vars[statement] == value)
-
-    def parse_argument(self, argument: str):
-        prompt = f"""
-        Parse the following logical argument into a structured format:
-
-        {argument}
-
-        Return the result as a JSON object with the following structure:
-        {{
-            "premises": [
-                {{
-                    "type": "implication",
-                    "antecedents": ["A", "B"],
-                    "consequent": "C"
-                }},
-                {{
-                    "type": "statement",
-                    "statement": "X",
-                    "value": true
-                }}
-            ],
-            "conclusion": {{
-                "statement": "Y",
-                "value": true
-            }}
-        }}
-        """
-
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",  # or whichever model supports the response_format parameter
-            messages=[
-                {"role": "system", "content": "You are a logical argument parser."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0,
-            response_format={"type": "json_object"}
-        )
-
-        content = response.choices[0].message.content
-        parsed_argument = json.loads(content)
-        return parsed_argument
-
     def create_solver_and_vars(self):
         return Solver(), {}
 
+    def get_or_create_var(self, vars, statement):
+        if statement not in vars:
+            vars[statement] = Bool(statement.replace(' ', '_'))
+        return vars[statement]
+
+    def add_transitive_property(self, solver, vars):
+        height_vars = [v for v in vars if "taller than" in v]
+        entities = set()
+        for v in height_vars:
+            entities.update(v.split(" is taller than "))
+
+        for a in entities:
+            for b in entities:
+                for c in entities:
+                    if a != b and b != c and a != c:
+                        premise1 = self.get_or_create_var(
+                            vars, f"{a} is taller than {b}")
+                        premise2 = self.get_or_create_var(
+                            vars, f"{b} is taller than {c}")
+                        conclusion = self.get_or_create_var(
+                            vars, f"{a} is taller than {c}")
+                        solver.add(
+                            Implies(And(premise1, premise2), conclusion))
+
     def add_premise_to_solver(self, solver, vars, premise):
         if premise['type'] == 'implication':
-            antecedents = premise['antecedents']
-            consequent = premise['consequent']
-
-            if any('x' in str(ant) or 'y' in str(ant) or 'z' in str(ant) for ant in antecedents + [consequent]):
-                # This is a general implication with variables
-                x, y, z = Consts('x y z', BoolSort())
-
-                def replace_vars(statement):
-                    return str(statement).replace('x', str(x)).replace('y', str(y)).replace('z', str(z))
-
-                ant_vars = [Bool(replace_vars(ant)) for ant in antecedents]
-                cons_var = Bool(replace_vars(consequent))
-
-                solver.add(
-                    ForAll([x, y, z], Implies(And(*ant_vars), cons_var)))
-            else:
-                # This is a specific implication
-                ant_vars = [self.get_or_create_var(
-                    vars, ant) for ant in antecedents]
-                cons_var = self.get_or_create_var(vars, consequent)
-                solver.add(Implies(And(*ant_vars), cons_var))
-
+            antecedents = [self.get_or_create_var(
+                vars, ant) for ant in premise['antecedents']]
+            consequent = self.get_or_create_var(vars, premise['consequent'])
+            solver.add(Implies(And(*antecedents), consequent))
         elif premise['type'] == 'statement':
             var = self.get_or_create_var(vars, premise['statement'])
-            solver.add(var == premise['value'])
+            solver.add(var if premise['value'] else Not(var))
 
     def check_premise_consistency(self, solver):
         return solver.check() == sat
 
-    def add_transitive_property(self, solver, vars):
-        height_vars = {k: v for k, v in vars.items() if "is taller than" in k}
-        for var1 in height_vars:
-            for var2 in height_vars:
-                if var1 != var2:
-                    parts1 = var1.split(" is taller than ")
-                    parts2 = var2.split(" is taller than ")
-                    if len(parts1) == 2 and len(parts2) == 2 and parts1[1] == parts2[0]:
-                        var3 = f"{parts1[0]} is taller than {parts2[1]}"
-                        if var3 in height_vars:
-                            solver.add(
-                                Implies(And(vars[var1], vars[var2]), vars[var3]))
-
-    def get_or_create_var(self, vars, statement):
-        if statement not in vars:
-            vars[statement] = Bool(statement.replace(" ", "_"))
-        return vars[statement]
-
     def check_argument(self, parsed_argument):
-        premises = parsed_argument['premises']
-        conclusion = parsed_argument['conclusion']
+        solver, vars = self.create_solver_and_vars()
 
-        solver = Solver()
-        variables = {}
+        for premise in parsed_argument['premises']:
+            self.add_premise_to_solver(solver, vars, premise)
 
-        print("Adding premises to solver:")
-        for premise in premises:
-            if premise['type'] == 'implication':
-                self.add_implication(solver, premise, variables)
-            elif premise['type'] == 'statement':
-                self.add_statement(solver, premise, variables)
+        self.add_transitive_property(solver, vars)
 
-        # Explicitly apply the general rule to specific instances
-        self.apply_general_rule(solver, variables, premises)
+        if not self.check_premise_consistency(solver):
+            return "invalid_or_inconsistent"
 
-        conclusion_var = self.get_variable(variables, conclusion['statement'])
+        conclusion_var = self.get_or_create_var(
+            vars, parsed_argument['conclusion']['statement'])
+        conclusion_value = parsed_argument['conclusion']['value']
 
-        print("\nChecking if negation of conclusion is unsatisfiable:")
         solver.push()
-        negation = Not(
-            conclusion_var) if conclusion['value'] else conclusion_var
-        solver.add(negation)
-        print(f"Added negation: {negation}")
-        result = solver.check()
-        print(f"Solver result: {result}")
-
-        if result == unsat:
-            print("Negation is unsatisfiable, argument is valid_and_true")
+        solver.add(Not(conclusion_var) if conclusion_value else conclusion_var)
+        if solver.check() == unsat:
             return "valid_and_true"
+        solver.pop()
+
+        solver.add(conclusion_var if conclusion_value else Not(conclusion_var))
+        if solver.check() == sat:
+            return "valid_but_not_always_true"
         else:
-            solver.pop()
-            print("\nChecking if conclusion is satisfiable:")
-            assertion = conclusion_var if conclusion['value'] else Not(
-                conclusion_var)
-            solver.add(assertion)
-            print(f"Added assertion: {assertion}")
-            result = solver.check()
-            print(f"Solver result: {result}")
-            if result == sat:
-                print("Conclusion is satisfiable, argument is valid_but_not_always_true")
-                return "valid_but_not_always_true"
-            else:
-                print("Conclusion is unsatisfiable, argument is invalid_or_inconsistent")
-                return "invalid_or_inconsistent"
-
-    def apply_general_rule(self, solver, variables, premises):
-        general_rule = next(
-            (p for p in premises if p['type'] == 'implication'), None)
-        if general_rule:
-            entities = set()
-            for var in variables:
-                parts = var.split(' ')
-                if len(parts) == 4 and parts[1] == 'is' and parts[3] == 'than':
-                    entities.add(parts[0])
-                    entities.add(parts[3])
-
-            for x in entities:
-                for y in entities:
-                    for z in entities:
-                        if x != y and y != z and x != z:
-                            antecedents = [self.get_variable(variables, ant.replace('x', x).replace('y', y).replace('z', z))
-                                           for ant in general_rule['antecedents']]
-                            consequent = self.get_variable(variables, general_rule['consequent'].replace(
-                                'x', x).replace('y', y).replace('z', z))
-                            solver.add(Implies(And(*antecedents), consequent))
-                            print(f"Applied general rule: {
-                                Implies(And(*antecedents), consequent)}")
-
-    def add_implication(self, solver, premise, variables):
-        antecedents = [self.get_variable(variables, ant)
-                       for ant in premise['antecedents']]
-        consequent = self.get_variable(variables, premise['consequent'])
-        implication = Implies(And(*antecedents), consequent)
-        solver.add(implication)
-        print(f"Added implication: {implication}")
-
-    def add_statement(self, solver, premise, variables):
-        var = self.get_variable(variables, premise['statement'])
-        statement = var if premise['value'] else Not(var)
-        solver.add(statement)
-        print(f"Added statement: {statement}")
-
-    def add_transitivity(self, solver, variables):
-        relations = self.find_relations(variables)
-        for relation in relations:
-            entities = self.find_entities(variables, relation)
-            for x in entities:
-                for y in entities:
-                    for z in entities:
-                        if x != y and y != z and x != z:
-                            transitivity = Implies(
-                                And(self.get_variable(variables, f"{x} {relation} {y}"),
-                                    self.get_variable(variables, f"{y} {relation} {z}")),
-                                self.get_variable(
-                                    variables, f"{x} {relation} {z}")
-                            )
-                            solver.add(transitivity)
-                            print(f"Added transitivity: {transitivity}")
-
-    def find_relations(self, variables):
-        relations = set()
-        for var in variables:
-            parts = var.split(' ')
-            if len(parts) == 4 and parts[1] == 'is' and parts[3] == 'than':
-                relations.add(f"is {parts[2]} than")
-        return relations
-
-    def find_entities(self, variables, relation):
-        entities = set()
-        for var in variables:
-            parts = var.split(' ')
-            if len(parts) == 4 and f"{parts[1]} {parts[2]} {parts[3]}" == relation:
-                entities.add(parts[0])
-                entities.add(parts[3])
-        return entities
-
-    def get_variable(self, variables, statement):
-        if statement not in variables:
-            if " and " in statement:
-                parts = statement.split(" and ")
-                return And(self.get_variable(variables, parts[0]),
-                           self.get_variable(variables, parts[1]))
-            variables[statement] = Bool(statement.replace(" ", "_"))
-        return variables[statement]
-
-    def substitute_variables(self, statement, x, y, z):
-        return Bool(statement.replace("x", str(x)).replace("y", str(y)).replace("z", str(z)))
-
-    def get_const(self, name, *args):
-        return next(arg for arg in args if str(arg) == name)
+            return "invalid_or_inconsistent"
 
     def interpret_result(self, result, conclusion):
         if result == "valid_and_true":
             return f"The argument is valid and true. {conclusion['statement']} is indeed {'true' if conclusion['value'] else 'false'}."
         elif result == "valid_but_not_always_true":
             return f"The argument is valid, but {conclusion['statement']} is not necessarily {'true' if conclusion['value'] else 'false'}."
-        elif result == "invalid_or_inconsistent":
-            return "The argument is invalid or inconsistent."
         else:
-            return result
+            return "The argument is invalid or inconsistent."
+
+    def parse_argument(self, argument):
+        # This is a simplified parser and might need to be more robust for real-world use
+        lines = argument.split('. ')
+        premises = []
+        conclusion = None
+
+        for line in lines:
+            if line.startswith("If ") and ", then " in line:
+                parts = line.split(", then ")
+                antecedents = parts[0].replace("If ", "").split(" and ")
+                consequent = parts[1].strip()
+                premises.append(
+                    {"type": "implication", "antecedents": antecedents, "consequent": consequent})
+            elif line.startswith("Therefore, "):
+                conclusion = {"statement": line.replace(
+                    "Therefore, ", "").strip(), "value": True}
+            else:
+                premises.append(
+                    {"type": "statement", "statement": line.strip(), "value": True})
+
+        return {"premises": premises, "conclusion": conclusion}
 
     def english_to_logic(self, argument: str) -> str:
-        try:
-            parsed_argument = self.parse_argument(argument)
-            result = self.check_argument(parsed_argument)
-            return self.interpret_result(result, parsed_argument['conclusion'])
-        except Exception as e:
-            return f"Error: {str(e)}"
+        parsed_argument = self.parse_argument(argument)
+        result = self.check_argument(parsed_argument)
+        return self.interpret_result(result, parsed_argument['conclusion'])
 
     async def create_thread(self, user_id: str) -> str:
         thread_id = await self.database.get_thread_id(user_id)
