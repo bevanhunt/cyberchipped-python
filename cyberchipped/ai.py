@@ -1,3 +1,4 @@
+from z3 import *
 import json
 import mimetypes
 from datetime import datetime
@@ -89,20 +90,10 @@ def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
 
 
 def english_to_logic(argument: str) -> str:
-    """
-    Convert an English argument to logical form and check if it's true or false using Z3.
-    """
-    # This is a simplified example. You'll need to implement more sophisticated
-    # natural language processing to handle complex arguments.
-
-    # For this example, we'll assume a simple argument structure:
-    # "If A, then B. A is true. Therefore, B is true."
-
     parts = argument.split('. ')
     if len(parts) != 3:
-        return "Invalid argument structure. Please use the format: 'If A, then B. A is true. Therefore, B is true.'"
+        return "Invalid argument structure. Please use the format: 'If A, then B. A is true/false. Therefore, C is true/false.'"
 
-    # Extract A and B
     if_then = parts[0].split(', then ')
     if len(if_then) != 2 or not if_then[0].startswith("If "):
         return "Invalid 'If-then' statement."
@@ -110,31 +101,34 @@ def english_to_logic(argument: str) -> str:
     A = if_then[0][3:]  # Remove "If "
     B = if_then[1]
 
-    # Create Z3 boolean variables
     a = Bool('A')
     b = Bool('B')
 
-    # Create the implication
-    implication = Implies(a, b)
-
-    # Check if A is stated to be true
-    a_is_true = parts[1] == f"{A} is true"
-
-    # Check the conclusion
-    conclusion = parts[2] == f"Therefore, {B} is true"
-
-    # Create a Z3 solver
     s = Solver()
-    s.add(implication)
+    s.add(Implies(a, b))
+
+    a_is_true = parts[1].endswith("is true")
+    conclusion = parts[2].split("Therefore, ")[1]
+    conclusion_statement, conclusion_value = conclusion.replace(
+        ".", "").rsplit(" is ", 1)
+    conclusion_is_true = conclusion_value == "true"
+
     s.add(a == a_is_true)
 
-    # Check if the argument is valid
     if s.check() == sat:
         model = s.model()
-        if model[b] == conclusion:
-            return f"The argument is valid and true. {B} is indeed {model[b]}."
+        b_value = model.evaluate(b)
+
+        if a_is_true:
+            if conclusion_statement == B:
+                if bool(b_value) == conclusion_is_true:
+                    return f"The argument is valid and true. {B} is indeed {conclusion_value}."
+                else:
+                    return f"The argument is valid, but the conclusion is false. {str(A).capitalize()} is true, and {B} is {str(bool(b_value)).lower()}, but the conclusion states it is {conclusion_value}."
+            else:
+                return f"The argument is invalid. The conclusion '{conclusion_statement}' does not match the consequent '{B}'."
         else:
-            return "The argument is invalid. The conclusion does not follow from the premises."
+            return f"The argument is valid, but {A} is false, so no definite conclusion can be drawn about {B}."
     else:
         return "The argument is inconsistent or invalid."
 
