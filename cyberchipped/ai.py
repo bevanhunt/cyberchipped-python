@@ -2,7 +2,7 @@ from z3 import *
 import json
 import mimetypes
 from datetime import datetime
-from typing import AsyncGenerator, Literal, Optional, Tuple, List, Dict, Any, Callable
+from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 from openai import OpenAI
@@ -17,51 +17,6 @@ import inspect
 from z3 import Bool, Implies, Solver, sat
 
 
-def english_to_logic(argument: str) -> str:
-    parts = argument.split('. ')
-    if len(parts) != 3:
-        return "Invalid argument structure. Please use the format: 'If A, then B. A is true/false. Therefore, C is true/false.'"
-
-    if_then = parts[0].split(', then ')
-    if len(if_then) != 2 or not if_then[0].startswith("If "):
-        return "Invalid 'If-then' statement."
-
-    A = if_then[0][3:]  # Remove "If "
-    B = if_then[1]
-
-    a = Bool('A')
-    b = Bool('B')
-
-    s = Solver()
-    s.add(Implies(a, b))
-
-    a_is_true = parts[1].endswith("is true")
-    conclusion = parts[2].split("Therefore, ")[1]
-    conclusion_statement, conclusion_value = conclusion.replace(
-        ".", "").rsplit(" is ", 1)
-    conclusion_is_true = conclusion_value == "true"
-
-    s.add(a == a_is_true)
-
-    if s.check() == sat:
-        model = s.model()
-        b_value = model.evaluate(b)
-
-        if a_is_true:
-            if conclusion_statement == B:
-                if bool(b_value) == conclusion_is_true:
-                    return f"The argument is valid and true. {B} is indeed {conclusion_value}."
-                else:
-                    return f"The argument is valid, but the conclusion is false. {str(A).capitalize()} is true, and {B} is {str(bool(b_value)).lower()}, but the conclusion states it is {conclusion_value}."
-            else:
-                return f"The argument is invalid. The conclusion '{conclusion_statement}' does not match the consequent '{B}'."
-        else:
-            return f"The argument is valid, but {A} is false, so no definite conclusion can be drawn about {B}."
-    else:
-        return "The argument is inconsistent or invalid."
-
-
-# Custom adapter for datetime
 def adapt_datetime(ts):
     return ts.isoformat()
 
@@ -221,7 +176,7 @@ class AI:
         self.assistant_id = None
         self.database = database
         self.accumulated_value = ""
-        self.add_tool(english_to_logic)
+        self.add_tool(self.english_to_logic)
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()
@@ -241,6 +196,154 @@ class AI:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         # Perform any cleanup actions here
         pass
+
+    def create_z3_vars(self, statements):
+        return {stmt: Bool(stmt) for stmt in statements}
+
+    def add_implications_to_solver(self, solver, implications, vars):
+        for antecedents, consequent in implications:
+            solver.add(Implies(And(*[vars[ant]
+                       for ant in antecedents]), vars[consequent]))
+
+    def add_statements_to_solver(self, solver, statements, vars):
+        for statement, value in statements:
+            solver.add(vars[statement] == value)
+
+    def parse_argument(self, argument: str):
+        prompt = f"""
+        Parse the following logical argument into a structured format:
+
+        {argument}
+
+        Return the result as a JSON object with the following structure:
+        {{
+            "premises": [
+                {{
+                    "type": "implication",
+                    "antecedents": ["A", "B"],
+                    "consequent": "C"
+                }},
+                {{
+                    "type": "statement",
+                    "statement": "X",
+                    "value": true
+                }}
+            ],
+            "conclusion": {{
+                "statement": "Y",
+                "value": true
+            }}
+        }}
+        """
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",  # or whichever model supports the response_format parameter
+            messages=[
+                {"role": "system", "content": "You are a logical argument parser."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0,
+            response_format={"type": "json_object"}
+        )
+
+        content = response.choices[0].message.content
+        parsed_argument = json.loads(content)
+        return parsed_argument
+
+    def create_solver_and_vars(self):
+        return Solver(), {}
+
+    def add_premise_to_solver(self, solver, vars, premise):
+        if premise['type'] == 'implication':
+            antecedents = [self.get_or_create_var(
+                ant, vars) for ant in premise['antecedents']]
+            consequent = self.get_or_create_var(premise['consequent'], vars)
+            solver.add(Implies(And(*antecedents), consequent))
+        elif premise['type'] == 'statement':
+            var = self.get_or_create_var(premise['statement'], vars)
+            solver.add(var == premise['value'])
+
+    def check_premise_consistency(self, solver):
+        return solver.check() == sat
+
+    def check_conclusion_necessarily_follows(self, solver, vars, conclusion):
+        conclusion_parts = conclusion['statement'].split(' and ')
+        conclusion_vars = [self.get_or_create_var(
+            part, vars) for part in conclusion_parts]
+        solver.push()
+        solver.add(Not(And(*conclusion_vars)))
+        result = solver.check() == unsat
+        solver.pop()
+        return result
+
+    def check_conclusion_possible(self, solver, vars, conclusion):
+        conclusion_parts = conclusion['statement'].split(' and ')
+        conclusion_vars = [self.get_or_create_var(
+            part, vars) for part in conclusion_parts]
+        solver.push()
+        solver.add(And(*conclusion_vars))
+        result = solver.check() == sat
+        solver.pop()
+        return result
+
+    def check_argument(self, parsed_argument):
+        premises = parsed_argument['premises']
+        conclusion = parsed_argument['conclusion']
+
+        solver, vars = self.create_solver_and_vars()
+
+        for premise in premises:
+            self.add_premise_to_solver(solver, vars, premise)
+
+        # Add transitive property for "is taller than" relation
+        self.add_transitive_property(solver, vars)
+
+        if not self.check_premise_consistency(solver):
+            return "invalid_or_inconsistent"
+
+        if self.check_conclusion_necessarily_follows(solver, vars, conclusion):
+            return "valid_and_true"
+
+        if self.check_conclusion_possible(solver, vars, conclusion):
+            return "valid_but_not_always_true"
+
+        return "invalid_or_inconsistent"
+
+    def add_transitive_property(self, solver, vars):
+        height_vars = {k: v for k, v in vars.items() if "is taller than" in k}
+        for var1 in height_vars:
+            for var2 in height_vars:
+                if var1 != var2:
+                    parts1 = var1.split(" is taller than ")
+                    parts2 = var2.split(" is taller than ")
+                    if len(parts1) == 2 and len(parts2) == 2 and parts1[1] == parts2[0]:
+                        var3 = f"{parts1[0]} is taller than {parts2[1]}"
+                        if var3 in height_vars:
+                            solver.add(
+                                Implies(And(vars[var1], vars[var2]), vars[var3]))
+
+    def interpret_result(self, result, conclusion):
+        if result == "valid_and_true":
+            return f"The argument is valid and true. {conclusion['statement']} is indeed {'true' if conclusion['value'] else 'false'}."
+        elif result == "valid_but_not_always_true":
+            return f"The argument is valid, but {conclusion['statement']} is not necessarily {'true' if conclusion['value'] else 'false'}."
+        elif result == "invalid_or_inconsistent":
+            return "The argument is invalid or inconsistent."
+        else:
+            return result
+
+    def get_or_create_var(self, statement, vars):
+        if statement not in vars:
+            vars[statement] = Bool(statement)
+        return vars[statement]
+
+    def english_to_logic(self, argument: str) -> str:
+        try:
+            parsed_argument = self.parse_argument(argument)
+            result = self.check_argument(parsed_argument)
+            return self.interpret_result(result, parsed_argument['conclusion'])
+        except Exception as e:
+            return f"Error: {str(e)}"
 
     async def create_thread(self, user_id: str) -> str:
         thread_id = await self.database.get_thread_id(user_id)
