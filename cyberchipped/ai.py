@@ -255,59 +255,34 @@ class AI:
 
     def add_premise_to_solver(self, solver, vars, premise):
         if premise['type'] == 'implication':
-            antecedents = [self.get_or_create_var(
-                ant, vars) for ant in premise['antecedents']]
-            consequent = self.get_or_create_var(premise['consequent'], vars)
-            solver.add(Implies(And(*antecedents), consequent))
+            antecedents = premise['antecedents']
+            consequent = premise['consequent']
+
+            if any('x' in str(ant) or 'y' in str(ant) or 'z' in str(ant) for ant in antecedents + [consequent]):
+                # This is a general implication with variables
+                x, y, z = Consts('x y z', BoolSort())
+
+                def replace_vars(statement):
+                    return str(statement).replace('x', str(x)).replace('y', str(y)).replace('z', str(z))
+
+                ant_vars = [Bool(replace_vars(ant)) for ant in antecedents]
+                cons_var = Bool(replace_vars(consequent))
+
+                solver.add(
+                    ForAll([x, y, z], Implies(And(*ant_vars), cons_var)))
+            else:
+                # This is a specific implication
+                ant_vars = [self.get_or_create_var(
+                    vars, ant) for ant in antecedents]
+                cons_var = self.get_or_create_var(vars, consequent)
+                solver.add(Implies(And(*ant_vars), cons_var))
+
         elif premise['type'] == 'statement':
-            var = self.get_or_create_var(premise['statement'], vars)
+            var = self.get_or_create_var(vars, premise['statement'])
             solver.add(var == premise['value'])
 
     def check_premise_consistency(self, solver):
         return solver.check() == sat
-
-    def check_conclusion_necessarily_follows(self, solver, vars, conclusion):
-        conclusion_parts = conclusion['statement'].split(' and ')
-        conclusion_vars = [self.get_or_create_var(
-            part, vars) for part in conclusion_parts]
-        solver.push()
-        solver.add(Not(And(*conclusion_vars)))
-        result = solver.check() == unsat
-        solver.pop()
-        return result
-
-    def check_conclusion_possible(self, solver, vars, conclusion):
-        conclusion_parts = conclusion['statement'].split(' and ')
-        conclusion_vars = [self.get_or_create_var(
-            part, vars) for part in conclusion_parts]
-        solver.push()
-        solver.add(And(*conclusion_vars))
-        result = solver.check() == sat
-        solver.pop()
-        return result
-
-    def check_argument(self, parsed_argument):
-        premises = parsed_argument['premises']
-        conclusion = parsed_argument['conclusion']
-
-        solver, vars = self.create_solver_and_vars()
-
-        for premise in premises:
-            self.add_premise_to_solver(solver, vars, premise)
-
-        # Add transitive property for "is taller than" relation
-        self.add_transitive_property(solver, vars)
-
-        if not self.check_premise_consistency(solver):
-            return "invalid_or_inconsistent"
-
-        if self.check_conclusion_necessarily_follows(solver, vars, conclusion):
-            return "valid_and_true"
-
-        if self.check_conclusion_possible(solver, vars, conclusion):
-            return "valid_but_not_always_true"
-
-        return "invalid_or_inconsistent"
 
     def add_transitive_property(self, solver, vars):
         height_vars = {k: v for k, v in vars.items() if "is taller than" in k}
@@ -322,6 +297,62 @@ class AI:
                             solver.add(
                                 Implies(And(vars[var1], vars[var2]), vars[var3]))
 
+    def get_or_create_var(self, vars, statement):
+        if statement not in vars:
+            vars[statement] = Bool(statement.replace(" ", "_"))
+        return vars[statement]
+
+    def check_argument(self, parsed_argument):
+        premises = parsed_argument['premises']
+        conclusion = parsed_argument['conclusion']
+
+        solver = Solver()
+        variables = {}
+
+        # Add premises to the solver
+        for premise in premises:
+            if premise['type'] == 'implication':
+                antecedents = [self.get_variable(
+                    variables, ant) for ant in premise['antecedents']]
+                consequent = self.get_variable(
+                    variables, premise['consequent'])
+                solver.add(Implies(And(*antecedents), consequent))
+            elif premise['type'] == 'statement':
+                var = self.get_variable(variables, premise['statement'])
+                solver.add(var if premise['value'] else Not(var))
+
+        # Check if the argument is valid
+        conclusion_var = self.get_variable(variables, conclusion['statement'])
+
+        # Check if the negation of the conclusion is unsatisfiable
+        solver.push()
+        solver.add(Not(conclusion_var)
+                   if conclusion['value'] else conclusion_var)
+        result = solver.check()
+        solver.pop()
+
+        if result == unsat:
+            return "valid_and_true"
+        elif result == sat:
+            return "valid_but_not_always_true"
+        else:
+            return "invalid_or_inconsistent"
+
+    def get_variable(self, variables, statement):
+        if statement not in variables:
+            if "and" in statement:
+                parts = statement.split(" and ")
+                return And(self.get_variable(variables, parts[0]),
+                           self.get_variable(variables, parts[1]))
+            variables[statement] = Bool(statement.replace(" ", "_"))
+        return variables[statement]
+
+    def substitute_variables(self, statement, x, y, z):
+        return Bool(statement.replace("x", str(x)).replace("y", str(y)).replace("z", str(z)))
+
+    def get_const(self, name, *args):
+        return next(arg for arg in args if str(arg) == name)
+
     def interpret_result(self, result, conclusion):
         if result == "valid_and_true":
             return f"The argument is valid and true. {conclusion['statement']} is indeed {'true' if conclusion['value'] else 'false'}."
@@ -331,11 +362,6 @@ class AI:
             return "The argument is invalid or inconsistent."
         else:
             return result
-
-    def get_or_create_var(self, statement, vars):
-        if statement not in vars:
-            vars[statement] = Bool(statement)
-        return vars[statement]
 
     def english_to_logic(self, argument: str) -> str:
         try:

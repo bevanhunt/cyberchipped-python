@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import json
 from cyberchipped.ai import AI
-from z3 import Solver, Bool, Not, sat, unsat
+from z3 import Solver, Bool, Not, sat, unsat, is_expr
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -110,11 +110,20 @@ class TestAI(unittest.TestCase):
 
     def test_get_or_create_var(self):
         vars = {}
-        var1 = self.ai.get_or_create_var("test1", vars)
-        self.assertEqual(vars["test1"], var1)
+        var1 = self.ai.get_or_create_var(vars, "test1")
+        self.assertIn("test1", vars)
+        self.assertTrue(is_expr(var1))
+        self.assertEqual(str(vars["test1"]), str(var1))
 
-        var2 = self.ai.get_or_create_var("test1", vars)
-        self.assertEqual(var1, var2)
+        var2 = self.ai.get_or_create_var(vars, "test1")
+        self.assertEqual(str(var1), str(var2))
+
+        # Test with a different statement
+        var3 = self.ai.get_or_create_var(vars, "test2")
+        self.assertIn("test2", vars)
+        self.assertTrue(is_expr(var3))
+        self.assertEqual(str(vars["test2"]), str(var3))
+        self.assertNotEqual(str(var1), str(var3))
 
     def test_add_premise_to_solver_implication(self):
         solver, vars = self.ai.create_solver_and_vars()
@@ -155,40 +164,6 @@ class TestAI(unittest.TestCase):
         self.ai.add_premise_to_solver(solver, vars, premise1)
         self.ai.add_premise_to_solver(solver, vars, premise2)
         self.assertFalse(self.ai.check_premise_consistency(solver))
-
-    def test_check_conclusion_necessarily_follows_true(self):
-        solver, vars = self.ai.create_solver_and_vars()
-        premise = {"type": "statement", "statement": "A", "value": True}
-        self.ai.add_premise_to_solver(solver, vars, premise)
-        conclusion = {"statement": "A", "value": True}
-        self.assertTrue(self.ai.check_conclusion_necessarily_follows(
-            solver, vars, conclusion))
-
-    def test_check_conclusion_necessarily_follows_false(self):
-        solver, vars = self.ai.create_solver_and_vars()
-        premise = {"type": "statement", "statement": "A", "value": True}
-        self.ai.add_premise_to_solver(solver, vars, premise)
-        conclusion = {"statement": "B", "value": True}
-        self.assertFalse(self.ai.check_conclusion_necessarily_follows(
-            solver, vars, conclusion))
-
-    def test_check_conclusion_possible_true(self):
-        solver, vars = self.ai.create_solver_and_vars()
-        premise = {"type": "statement", "statement": "A", "value": True}
-        self.ai.add_premise_to_solver(solver, vars, premise)
-        conclusion = {"statement": "B", "value": True}
-        self.assertTrue(self.ai.check_conclusion_possible(
-            solver, vars, conclusion))
-
-    def test_check_conclusion_possible_false(self):
-        solver, vars = self.ai.create_solver_and_vars()
-        premise1 = {"type": "statement", "statement": "A", "value": True}
-        premise2 = {"type": "statement", "statement": "B", "value": False}
-        self.ai.add_premise_to_solver(solver, vars, premise1)
-        self.ai.add_premise_to_solver(solver, vars, premise2)
-        conclusion = {"statement": "B", "value": True}
-        self.assertFalse(self.ai.check_conclusion_possible(
-            solver, vars, conclusion))
 
     def test_interpret_result_valid_and_true(self):
         result = "valid_and_true"
