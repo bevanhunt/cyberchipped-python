@@ -13,7 +13,6 @@ from openai.types.beta.threads import Text, TextDelta
 from typing_extensions import override
 import sqlite3
 import inspect
-from z3 import Bool, Implies, Solver, sat, And, Not, unsat
 
 
 def adapt_datetime(ts):
@@ -152,30 +151,13 @@ class AI:
     def __init__(self, api_key: str, name: str, instructions: str, database: Any):
         self.client = OpenAI(api_key=api_key)
         self.name = name
-        self.instructions = """
-            You are an AI assistant that helps users analyze simple logical arguments:
-
-            english_to_logic(argument: str) -> str
-            This function analyzes simple logical arguments in English and determines their validity.
-
-            Guidelines for english_to_logic:
-            1. The function analyzes simple logical arguments in the form of "If A, then B. A is true. Therefore, B is true."
-            2. It uses the Z3 theorem prover to check the validity of the argument.
-            3. The function returns a string explaining whether the argument is valid, true, or invalid.
-
-            Example of an english_to_logic input:
-            "If it's raining, then the grass is wet. It's raining is true. Therefore, the grass is wet is true."
-
-            Remember:
-            - For english_to_logic, provide the entire argument as a single string, following the format: "If A, then B. A is true. Therefore, B is true."
-        """ + instructions
+        self.instructions = instructions
         self.model = "gpt-4o-mini"
         self.tools = [{"type": "code_interpreter"}]
         self.tool_handlers = {}
         self.assistant_id = None
         self.database = database
         self.accumulated_value = ""
-        self.add_tool(self.english_to_logic)
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()
@@ -195,123 +177,6 @@ class AI:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         # Perform any cleanup actions here
         pass
-
-    def create_solver_and_vars(self):
-        return Solver(), {}
-
-    def get_or_create_var(self, vars, statement):
-        if statement not in vars:
-            vars[statement] = Bool(statement.replace(' ', '_'))
-        return vars[statement]
-
-    def add_transitive_property(self, solver, vars):
-        height_vars = [v for v in vars if "taller than" in v]
-        entities = set()
-        for v in height_vars:
-            entities.update(v.split(" is taller than "))
-
-        for a in entities:
-            for b in entities:
-                for c in entities:
-                    if a != b and b != c and a != c:
-                        premise1 = self.get_or_create_var(
-                            vars, f"{a} is taller than {b}")
-                        premise2 = self.get_or_create_var(
-                            vars, f"{b} is taller than {c}")
-                        conclusion = self.get_or_create_var(
-                            vars, f"{a} is taller than {c}")
-                        solver.add(
-                            Implies(And(premise1, premise2), conclusion))
-
-    def add_premise_to_solver(self, solver, vars, premise):
-        if premise['type'] == 'implication':
-            antecedents = [self.get_or_create_var(
-                vars, ant) for ant in premise['antecedents']]
-            consequent = self.get_or_create_var(vars, premise['consequent'])
-            solver.add(Implies(And(*antecedents), consequent))
-        elif premise['type'] == 'statement':
-            var = self.get_or_create_var(vars, premise['statement'])
-            solver.add(var if premise['value'] else Not(var))
-
-    def check_premise_consistency(self, solver):
-        return solver.check() == sat
-
-    def check_argument(self, parsed_argument):
-        solver, vars = self.create_solver_and_vars()
-
-        for premise in parsed_argument['premises']:
-            self.add_premise_to_solver(solver, vars, premise)
-
-        self.add_transitive_property(solver, vars)
-
-        if not self.check_premise_consistency(solver):
-            return "invalid_or_inconsistent"
-
-        conclusion_statement = parsed_argument['conclusion']['statement']
-        conclusion_value = parsed_argument['conclusion']['value']
-
-        # Handle compound conclusions
-        if " and " in conclusion_statement:
-            conclusion_parts = conclusion_statement.split(" and ")
-            conclusion_vars = [self.get_or_create_var(
-                vars, part.strip()) for part in conclusion_parts]
-            conclusion_expr = And(*conclusion_vars)
-        else:
-            conclusion_expr = self.get_or_create_var(
-                vars, conclusion_statement)
-
-        solver.push()
-        solver.add(Not(conclusion_expr)
-                   if conclusion_value else conclusion_expr)
-        if solver.check() == unsat:
-            return "valid_and_true"
-        solver.pop()
-
-        solver.add(conclusion_expr if conclusion_value else Not(conclusion_expr))
-        if solver.check() == sat:
-            return "valid_but_not_always_true"
-        else:
-            return "invalid_or_inconsistent"
-
-    def interpret_result(self, result, conclusion):
-        conclusion_str = conclusion['statement']
-        if " and " in conclusion_str:
-            # Add quotes for clarity in output
-            conclusion_str = f"'{conclusion_str}'"
-
-        if result == "valid_and_true":
-            return f"The argument is valid and true. {conclusion_str} is indeed {'true' if conclusion['value'] else 'false'}."
-        elif result == "valid_but_not_always_true":
-            return f"The argument is valid, but {conclusion_str} is not necessarily {'true' if conclusion['value'] else 'false'}."
-        else:
-            return "The argument is invalid or inconsistent."
-
-    def parse_argument(self, argument):
-        # This is a simplified parser and might need to be more robust for real-world use
-        lines = argument.split('. ')
-        premises = []
-        conclusion = None
-
-        for line in lines:
-            if line.startswith("If ") and ", then " in line:
-                parts = line.split(", then ")
-                antecedents = parts[0].replace("If ", "").split(" and ")
-                consequent = parts[1].strip()
-                premises.append(
-                    {"type": "implication", "antecedents": antecedents, "consequent": consequent})
-            elif line.startswith("Therefore, "):
-                conclusion = {"statement": line.replace(
-                    "Therefore, ", "").strip(), "value": True}
-            else:
-                premises.append(
-                    {"type": "statement", "statement": line.strip(), "value": True})
-
-        return {"premises": premises, "conclusion": conclusion}
-
-    def english_to_logic(self, argument: str) -> str:
-        parsed_argument = self.parse_argument(argument)
-        result = self.check_argument(parsed_argument)
-        return self.interpret_result(result, parsed_argument['conclusion'])
 
     async def create_thread(self, user_id: str) -> str:
         thread_id = await self.database.get_thread_id(user_id)
