@@ -15,78 +15,6 @@ from typing_extensions import override
 import sqlite3
 import inspect
 from z3 import Bool, Implies, Solver, sat
-from pylog.logic_variables import unify
-import ast
-
-
-def pylog_query(query: str) -> str:
-    """
-    Execute a PyLog query from natural language and return the results as a string.
-    """
-    try:
-        predicate, args = parse_natural_query(query)
-        if predicate == "member":
-            results = execute_member_query(args)
-            return format_results(results, args[0], args[1])
-        else:
-            raise ValueError(f"Unsupported query type: {predicate}")
-    except Exception as e:
-        return f"Error executing PyLog query: {str(e)}"
-
-
-def parse_natural_query(query: str) -> Tuple[str, List[str]]:
-    """Parse the natural language query into a predicate and arguments."""
-    query = query.lower()
-    if "in" in query or "member of" in query or "belongs to" in query:
-        predicate = "member"
-        parts = query.replace("?", "").split()
-        item = next(part for part in parts if part not in [
-                    "is", "in", "member", "of", "belongs", "to"])
-        item = item.strip("'\"")  # Remove quotes from the item
-        list_start = query.index("[")
-        list_end = query.rindex("]") + 1
-        list_str = query[list_start:list_end]
-        return predicate, [item, list_str]
-    else:
-        raise ValueError(f"Unsupported query format: {query}")
-
-
-def format_results(results: List[Dict[str, str]], item: str, list_str: str) -> str:
-    """Format the results into a readable string."""
-    if results:
-        if len(results) == 1:
-            return f"Yes, {item} is a member of the list {list_str}."
-        else:
-            items = ", ".join(result['X'] for result in results)
-            return f"The following items are members of the list {list_str}: {items}"
-    else:
-        return f"No, {item} is not a member of the list {list_str}."
-
-
-def execute_member_query(args: List[str]) -> List[Dict[str, str]]:
-    """Execute a member query."""
-    if len(args) != 2:
-        raise ValueError("member/2 predicate requires 2 arguments")
-
-    # Convert item to lowercase for case-insensitive comparison
-    item = args[0].lower()
-    try:
-        list_arg = ast.literal_eval(args[1])
-        if not isinstance(list_arg, (list, tuple)):
-            raise ValueError(f"Second argument must be a list or tuple, got: {
-                             type(list_arg)}")
-    except Exception as e:
-        raise ValueError(f"Error parsing list argument: {e}")
-
-    results = []
-    for list_item in list_arg:
-        if isinstance(list_item, str):
-            # Remove quotes and convert to lowercase
-            list_item = list_item.strip("'\"").lower()
-        if str(list_item).lower() == item:  # Case-insensitive comparison
-            results.append({"X": str(list_item)})
-
-    return results
 
 
 def english_to_logic(argument: str) -> str:
@@ -271,35 +199,10 @@ class AI:
         self.client = OpenAI(api_key=api_key)
         self.name = name
         self.instructions = """
-            You are an AI assistant that helps users interact with a Prolog-like query system and analyze simple logical arguments. The system uses two main functions:
+            You are an AI assistant that helps users analyze simple logical arguments:
 
-            1. pylog_query(query: str) -> str
-            This function accepts Prolog-style queries as strings.
-
-            2. english_to_logic(argument: str) -> str
+            english_to_logic(argument: str) -> str
             This function analyzes simple logical arguments in English and determines their validity.
-
-            Guidelines for pylog_query:
-            1. Queries should be in natural language, asking about list membership.
-            2. The query should mention an item and a list.
-            3. The list should be enclosed in square brackets.
-            4. Currently, the system only supports membership queries.
-
-            Examples of valid queries for pylog_query:
-            - "Is 3 in [1, 2, 3, 4, 5]?"
-            - "What is a member of [apple, banana, cherry]?"
-            - "Does orange belong to [apple, banana, cherry]?"
-
-            When a user asks a question about list membership:
-            1. Formulate the appropriate natural language query for pylog_query.
-            2. If unsure, ask the user for clarification on what item they're asking about and what list they're checking against.
-
-            Remember:
-            - For pylog_query, use natural language to ask about list membership.
-            - Enclose lists in square brackets.
-            - If a request can't be handled by the function, explain why and provide guidance on what's supported.
-
-            Respond with the exact string that should be passed to the pylog_query function.
 
             Guidelines for english_to_logic:
             1. The function analyzes simple logical arguments in the form of "If A, then B. A is true. Therefore, B is true."
@@ -309,17 +212,8 @@ class AI:
             Example of an english_to_logic input:
             "If it's raining, then the grass is wet. It's raining is true. Therefore, the grass is wet is true."
 
-            When a user asks a question or makes a statement:
-            1. If it's a query about list membership, formulate the appropriate Prolog-like query string for pylog_query.
-            2. If it's a logical argument in the specified format, use the english_to_logic function to analyze it.
-            3. If unsure, ask the user for clarification on whether they want to query list membership or analyze a logical argument.
-
             Remember:
-            - For pylog_query, use 'X' (capital) for variables, and enclose lists in square brackets.
             - For english_to_logic, provide the entire argument as a single string, following the format: "If A, then B. A is true. Therefore, B is true."
-            - If a request can't be handled by either function, explain why and provide guidance on what's supported.
-
-            Respond with the exact string that should be passed to the appropriate function, and specify which function to use.
         """ + instructions
         self.model = "gpt-4o-mini"
         self.tools = [{"type": "code_interpreter"}]
@@ -328,7 +222,6 @@ class AI:
         self.database = database
         self.accumulated_value = ""
         self.add_tool(english_to_logic)
-        self.add_tool(pylog_query)
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()
