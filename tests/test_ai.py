@@ -1,7 +1,5 @@
-from z3 import Solver, Bool, And, Implies, Not, unsat, sat
 import unittest
-from unittest.mock import MagicMock, patch
-import json
+from unittest.mock import MagicMock
 from cyberchipped.ai import AI
 from z3 import Solver, Bool, Not, sat, unsat, is_expr
 from dotenv import load_dotenv

@@ -1,4 +1,3 @@
-from z3 import *
 import json
 import mimetypes
 from datetime import datetime
@@ -14,7 +13,7 @@ from openai.types.beta.threads import Text, TextDelta
 from typing_extensions import override
 import sqlite3
 import inspect
-from z3 import Bool, Implies, Solver, sat
+from z3 import Bool, Implies, Solver, sat, And, Not, unsat
 
 
 def adapt_datetime(ts):
