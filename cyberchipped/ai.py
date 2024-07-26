@@ -161,17 +161,19 @@ class AI:
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()
-        for assistant in assistants:
-            if assistant.name == self.name:
-                openai.beta.assistants.delete(assistant.id)
-                break
+        existing_assistant = next(
+            (a for a in assistants if a.name == self.name), None)
 
-        self.assistant_id = openai.beta.assistants.create(
-            name=self.name,
-            instructions=self.instructions,
-            tools=self.tools,
-            model=self.model,
-        ).id
+        if existing_assistant:
+            self.assistant_id = existing_assistant.id
+        else:
+            self.assistant_id = openai.beta.assistants.create(
+                name=self.name,
+                instructions=self.instructions,
+                tools=self.tools,
+                model=self.model,
+            ).id
+
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
