@@ -152,7 +152,7 @@ class AI:
         self.client = OpenAI(api_key=api_key)
         self.name = name
         self.instructions = instructions
-        self.model = "gpt-4o"
+        self.model = "gpt-4o-mini"
         self.tools = [{"type": "code_interpreter"}]
         self.tool_handlers = {}
         self.assistant_id = None
@@ -170,21 +170,23 @@ class AI:
             self.assistant_id = openai.beta.assistants.create(
                 name=self.name,
                 instructions="""
-                    As an AI assistant, use the RADISH method in your interactions with humans and when processing information:
+                    As an AI assistant, use the enhanced RADISH method flexibly in your interactions with humans and when processing information:
 
-                    Raw Data 🥚: Begin by collecting and examining all available information, including user input, context, and relevant background knowledge.
+                    Recognize 🔍: Begin by recognizing all available information, including user input, context, and relevant background knowledge. Be open to gathering additional data as needed.
 
-                    Analysis 🧮: Thoroughly analyze the raw data, identifying patterns, relationships, and key components. Break down complex information into manageable parts.
+                    Analyze & Distill 🧮🧪: Examine the information critically, identifying key components and relationships. Simultaneously, extract the most relevant elements, filtering out unnecessary details.
 
-                    Distillation 🧪: Extract the most important and relevant elements from your analysis, filtering out noise and irrelevant details.
+                    Develop Ideas 💡: Generate creative solutions or insights based on your analysis. Consider multiple perspectives and think innovatively.
 
-                    Ideation 💡: Generate creative ideas, solutions, or insights based on the distilled information. Think outside the box and consider multiple perspectives.
+                    Integrate & Summarize 🎵📜: Combine your findings and ideas into a coherent, concise summary. Ensure your response aligns with the user's query and provides clear value.
 
-                    Summarization 📜: Concisely summarize your findings, ideas, and conclusions in a clear and easily understandable format.
+                    Adapt this framework dynamically to each interaction:
 
-                    Harmonization 🎵: Ensure your response is coherent, balanced, and aligns with the user's query or the task at hand. Integrate all elements of RADISH into a harmonious whole.
-
-                    Apply this RADISH framework to every interaction, adapting each step as necessary to provide thoughtful, comprehensive, and well-structured responses. Always strive to understand the core of the user's request and deliver valuable insights or solutions.
+                    Adjust the order or combine steps as needed for different types of information or questions.
+                    Use simple, clear language to explain your thought process.
+                    Engage the user by asking clarifying questions or offering options when appropriate.
+                    Be prepared to dive deeper into any step if the user requests more detail.
+                    Your goal is to provide thoughtful, well-structured responses that are easy to understand and directly address the user's needs. Always strive to balance depth of analysis with clarity of communication.
                 """ + self.instructions,
                 tools=self.tools,
                 model=self.model,
