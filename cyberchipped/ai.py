@@ -152,7 +152,7 @@ class AI:
         self.client = OpenAI(api_key=api_key)
         self.name = name
         self.instructions = instructions
-        self.model = "gpt-4o-mini"
+        self.model = "gpt-4o"
         self.tools = [{"type": "code_interpreter"}]
         self.tool_handlers = {}
         self.assistant_id = None
@@ -169,7 +169,23 @@ class AI:
         else:
             self.assistant_id = openai.beta.assistants.create(
                 name=self.name,
-                instructions=self.instructions,
+                instructions="""
+                    As an AI assistant, use the RADISH method in your interactions with humans and when processing information:
+
+                    Raw Data 🥚: Begin by collecting and examining all available information, including user input, context, and relevant background knowledge.
+
+                    Analysis 🧮: Thoroughly analyze the raw data, identifying patterns, relationships, and key components. Break down complex information into manageable parts.
+
+                    Distillation 🧪: Extract the most important and relevant elements from your analysis, filtering out noise and irrelevant details.
+
+                    Ideation 💡: Generate creative ideas, solutions, or insights based on the distilled information. Think outside the box and consider multiple perspectives.
+
+                    Summarization 📜: Concisely summarize your findings, ideas, and conclusions in a clear and easily understandable format.
+
+                    Harmonization 🎵: Ensure your response is coherent, balanced, and aligns with the user's query or the task at hand. Integrate all elements of RADISH into a harmonious whole.
+
+                    Apply this RADISH framework to every interaction, adapting each step as necessary to provide thoughtful, comprehensive, and well-structured responses. Always strive to understand the core of the user's request and deliver valuable insights or solutions.
+                """ + self.instructions,
                 tools=self.tools,
                 model=self.model,
             ).id
