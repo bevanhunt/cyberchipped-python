@@ -43,22 +43,6 @@ import asyncio
 asyncio.run(main())
 ```
 
-## Running Tests
-
-To run the tests for CyberChipped, follow these steps:
-
-1. Ensure you have pytest and pytest-asyncio installed:
-   ```bash
-   pip install pytest pytest-asyncio
-   ```
-
-2. Navigate to the project root directory.
-
-3. Run the tests using pytest:
-   ```bash
-   pytest tests/
-   ```
-
 ## Contributing
 
 Contributions to CyberChipped are welcome! Please feel free to submit a Pull Request.
