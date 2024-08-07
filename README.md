@@ -4,11 +4,11 @@
 
 ![CyberChipped Logo](https://cyberchipped.com/375.png)
 
-CyberChipped is a Python library that provides an AI-powered conversation interface using OpenAI's GPT models. It supports both text and audio-based interactions, with features like thread management, message persistence, and custom tool integration.
+CyberChipped is a Python library that provides an AI-powered conversation interface using OpenAI's Assistant API. It supports both text and audio-based interactions, with features like thread management, message persistence, and custom tool integration.
 
 ## Features
 
-- Text-based conversations with AI
+- Streaming text-based conversations with AI
 - Audio transcription and text-to-speech conversion
 - Thread management for maintaining conversation context
 - Message persistence using SQLite or MongoDB
