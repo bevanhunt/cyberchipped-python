@@ -9,7 +9,7 @@ import openai
 import aiosqlite
 from fastapi import UploadFile
 from openai import AssistantEventHandler
-from openai.types.beta.threads import Text, TextDelta
+from openai.types.beta.threads import TextDelta, Text
 from typing_extensions import override
 import sqlite3
 import inspect
