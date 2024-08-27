@@ -9,7 +9,7 @@ CyberChipped is a Python library that provides an AI-powered conversation interf
 ## Features
 
 - Streaming text-based conversations with AI
-- Audio transcription and text-to-speech conversion
+- Audio transcription and streaming text-to-speech conversion
 - Thread management for maintaining conversation context
 - Message persistence using SQLite or MongoDB
 - Custom tool integration for extending AI capabilities

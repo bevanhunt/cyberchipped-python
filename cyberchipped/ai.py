@@ -1,5 +1,4 @@
 import json
-import mimetypes
 from datetime import datetime
 from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
@@ -7,7 +6,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from openai import OpenAI
 import openai
 import aiosqlite
-from fastapi import UploadFile
 from openai import AssistantEventHandler
 from openai.types.beta.threads import TextDelta, Text
 from typing_extensions import override
@@ -190,15 +188,10 @@ class AI:
 
         return thread_id
 
-    async def listen(self, audio_file: UploadFile):
-        try:
-            extension = mimetypes.guess_extension(audio_file.content_type)
-            if extension is None:
-                raise Exception("Invalid file type")
-        except Exception:
-            extension = audio_file.filename.split(".")[-1]
+    async def listen(self, audio_content: bytes, input_format: str) -> str:
         transcription = self.client.audio.transcriptions.create(
-            model="whisper-1", file=(f"file.{extension}", audio_file.file)
+            model="whisper-1",
+            file=(f"file.{input_format}", audio_content),
         )
         return transcription.text
 
@@ -255,19 +248,21 @@ class AI:
     async def conversation(
         self,
         user_id: str,
-        audio_file: UploadFile,
+        audio_bytes: bytes,
         voice: Literal["alloy", "echo", "fable",
                        "onyx", "nova", "shimmer"] = "nova",
+        input_format: Literal["flac", "m4a", "mp3", "mp4",
+                              "mpeg", "mpga", "oga", "ogg", "wav", "webm"] = "mp4",
         response_format: Literal["mp3", "opus",
-                                 "aac", "flac", "wav", "pcm"] = "mp3",
-    ):
+                                 "aac", "flac", "wav", "pcm"] = "aac",
+    ) -> AsyncGenerator[bytes, None]:
         thread_id = await self.database.get_thread_id(user_id)
 
         if thread_id is None:
             thread_id = await self.create_thread(user_id)
 
         self.current_thread_id = thread_id
-        transcript = await self.listen(audio_file)
+        transcript = await self.listen(audio_bytes, input_format)
         event_handler = EventHandler(self.tool_handlers, self)
         openai.beta.threads.messages.create(
             thread_id=thread_id,
@@ -293,14 +288,14 @@ class AI:
 
         await self.database.save_message(user_id, metadata)
 
-        response = self.client.audio.speech.create(
+        with self.client.audio.speech.with_streaming_response.create(
             model="tts-1",
             voice=voice,
             input=response_text,
             response_format=response_format,
-        )
-
-        return response.response.iter_bytes()
+        ) as response:
+            for chunk in response.iter_bytes(1024):
+                yield chunk
 
     def handle_requires_action(self, data, run_id):
         tool_outputs = []
