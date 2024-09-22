@@ -146,11 +146,11 @@ class SQLiteDatabase:
 
 
 class AI:
-    def __init__(self, api_key: str, name: str, instructions: str, database: Any):
+    def __init__(self, api_key: str, name: str, instructions: str, database: Any, model: str = "gpt-4o-mini"):
         self.client = OpenAI(api_key=api_key)
         self.name = name
         self.instructions = instructions
-        self.model = "gpt-4o-mini"
+        self.model = model
         self.tools = [{"type": "code_interpreter"}]
         self.tool_handlers = {}
         self.assistant_id = None
