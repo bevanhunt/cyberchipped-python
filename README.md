@@ -27,7 +27,7 @@ pip install cyberchipped
 Here's a basic example of how to use CyberChipped:
 
 ```python
-from cyberchipped.ai import AI, SQLiteDatabase
+from cyberchipped import AI, SQLiteDatabase
 
 async def main():
     database = SQLiteDatabase("conversations.db")
