@@ -80,15 +80,15 @@ class MongoDatabase:
 class SQLiteDatabase:
     def __init__(self, db_path: str):
         self.db_path = db_path
-        conn = sqlite3.connect(db_path)
-        conn.execute(
+        self.conn = sqlite3.connect(db_path)
+        self.conn.execute(
             "CREATE TABLE IF NOT EXISTS threads (user_id TEXT, thread_id TEXT)"
         )
-        conn.execute(
+        self.conn.execute(
             "CREATE TABLE IF NOT EXISTS messages (user_id TEXT, message TEXT, response TEXT, timestamp TEXT)"
         )
-        conn.commit()
-        conn.close()
+        self.conn.commit()
+        self.conn.close()
 
     async def save_thread_id(self, user_id: str, thread_id: str):
         async with aiosqlite.connect(
