@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import json
 from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
@@ -32,11 +33,11 @@ class EventHandler(AssistantEventHandler):
         super().__init__()
         self.tool_handlers = tool_handlers
         self.ai_instance = ai_instance
-        self.accumulated_value = ""
 
     @override
     def on_text_delta(self, delta: TextDelta, snapshot: Text):
-        self.ai_instance.accumulated_value += delta.value
+        asyncio.create_task(
+            self.ai_instance.accumulated_value_queue.put(delta.value))
 
     @override
     def on_event(self, event):
@@ -155,7 +156,7 @@ class AI:
         self.tool_handlers = {}
         self.assistant_id = None
         self.database = database
-        self.accumulated_value = ""
+        self.accumulated_value_queue = asyncio.Queue()
 
     async def __aenter__(self):
         assistants = openai.beta.assistants.list()
@@ -195,7 +196,9 @@ class AI:
         )
         return transcription.text
 
-    async def text(self, user_id: str, text: str) -> AsyncGenerator[str, None]:
+    async def text(self, user_id: str, user_text: str) -> AsyncGenerator[str, None]:
+        self.accumulated_value_queue = asyncio.Queue()
+
         thread_id = await self.database.get_thread_id(user_id)
 
         if thread_id is None:
@@ -207,26 +210,39 @@ class AI:
         self.client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
-            content=text,
+            content=user_text,
         )
 
         event_handler = EventHandler(
             self.tool_handlers, self)
 
-        with self.client.beta.threads.runs.stream(
-            thread_id=thread_id,
-            assistant_id=self.assistant_id,
-            event_handler=event_handler,
-        ) as stream:
-            for text in stream.text_deltas:
-                yield text
-            stream.until_done()
+        async def stream_processor():
+            with self.client.beta.threads.runs.stream(
+                thread_id=thread_id,
+                assistant_id=self.assistant_id,
+                event_handler=event_handler,
+            ) as stream:
+                stream.until_done()
+
+        # Start the stream processor in a separate task
+        asyncio.create_task(stream_processor())
+
+        # Yield values from the queue as they become available
+        full_response = ""
+        while True:
+            try:
+                value = await asyncio.wait_for(self.accumulated_value_queue.get(), timeout=0.1)
+                full_response += value
+                yield value
+            except asyncio.TimeoutError:
+                if self.accumulated_value_queue.empty():
+                    break
 
         # Save the message to the database
         metadata = {
             "user_id": user_id,
-            "message": text,
-            "response": self.accumulated_value,
+            "message": user_text,
+            "response": full_response,
             "timestamp": datetime.now(),
         }
 
@@ -243,6 +259,9 @@ class AI:
         response_format: Literal["mp3", "opus",
                                  "aac", "flac", "wav", "pcm"] = "aac",
     ) -> AsyncGenerator[bytes, None]:
+        # Reset the queue for each new conversation
+        self.accumulated_value_queue = asyncio.Queue()
+
         thread_id = await self.database.get_thread_id(user_id)
 
         if thread_id is None:
@@ -257,28 +276,41 @@ class AI:
             content=transcript,
         )
 
-        with openai.beta.threads.runs.stream(
-            thread_id=thread_id,
-            assistant_id=self.assistant_id,
-            event_handler=event_handler,
-        ) as stream:
-            stream.until_done()
+        async def stream_processor():
+            with openai.beta.threads.runs.stream(
+                thread_id=thread_id,
+                assistant_id=self.assistant_id,
+                event_handler=event_handler,
+            ) as stream:
+                stream.until_done()
 
-        response_text = self.accumulated_value
+        # Start the stream processor in a separate task
+        asyncio.create_task(stream_processor())
+
+        # Collect the full response
+        full_response = ""
+        while True:
+            try:
+                value = await asyncio.wait_for(self.accumulated_value_queue.get(), timeout=0.1)
+                full_response += value
+            except asyncio.TimeoutError:
+                if self.accumulated_value_queue.empty():
+                    break
 
         metadata = {
             "user_id": user_id,
             "message": transcript,
-            "response": response_text,
+            "response": full_response,
             "timestamp": datetime.now(),
         }
 
         await self.database.save_message(user_id, metadata)
 
+        # Generate and stream the audio response
         with self.client.audio.speech.with_streaming_response.create(
             model="tts-1",
             voice=voice,
-            input=response_text,
+            input=full_response,
             response_format=response_format,
         ) as response:
             for chunk in response.iter_bytes(1024):
@@ -304,7 +336,7 @@ class AI:
             tool_outputs=tool_outputs
         ) as stream:
             for text in stream.text_deltas:
-                self.accumulated_value += text
+                asyncio.create_task(self.accumulated_value_queue.put(text))
                 print(text, end="", flush=True)
 
     def add_tool(self, func: Callable):
