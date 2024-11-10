@@ -232,8 +232,9 @@ class AI:
         while True:
             try:
                 value = await asyncio.wait_for(self.accumulated_value_queue.get(), timeout=0.1)
-                full_response += value
-                yield value
+                if value is not None:
+                    full_response += value
+                    yield value
             except asyncio.TimeoutError:
                 if self.accumulated_value_queue.empty():
                     break
@@ -292,7 +293,8 @@ class AI:
         while True:
             try:
                 value = await asyncio.wait_for(self.accumulated_value_queue.get(), timeout=0.1)
-                full_response += value
+                if value is not None:
+                    full_response += value
             except asyncio.TimeoutError:
                 if self.accumulated_value_queue.empty():
                     break
