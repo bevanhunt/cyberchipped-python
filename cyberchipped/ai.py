@@ -1,5 +1,5 @@
-import json
 from datetime import datetime
+import json
 from typing import AsyncGenerator, Literal, Optional, Dict, Any, Callable
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -41,7 +41,7 @@ class EventHandler(AssistantEventHandler):
     @override
     def on_event(self, event):
         if event.event == "thread.run.requires_action":
-            run_id = event.data.id  # Retrieve the run ID from the event data
+            run_id = event.data.id
             self.ai_instance.handle_requires_action(event.data, run_id)
 
 
@@ -313,15 +313,11 @@ class AI:
 
     def submit_tool_outputs(self, tool_outputs, run_id):
         # Use the submit_tool_outputs_stream helper
-        with openai.beta.threads.runs.submit_tool_outputs_stream(
+        self.client.beta.threads.runs.submit_tool_outputs(
             thread_id=self.current_thread_id,
             run_id=run_id,
-            tool_outputs=tool_outputs,
-            event_handler=EventHandler(self.tool_handlers, self),
-        ) as stream:
-            for text in stream.text_deltas:
-                print(text, end="", flush=True)
-            print()
+            tool_outputs=tool_outputs
+        )
 
     def add_tool(self, func: Callable):
         sig = inspect.signature(func)
