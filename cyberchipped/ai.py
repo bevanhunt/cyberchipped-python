@@ -308,16 +308,16 @@ class AI:
                 tool_outputs.append(
                     {"tool_call_id": tool.id, "output": output})
 
-        # Submit all tool_outputs at the same time
         self.submit_tool_outputs(tool_outputs, run_id)
 
     def submit_tool_outputs(self, tool_outputs, run_id):
-        # Use the submit_tool_outputs_stream helper
-        self.client.beta.threads.runs.submit_tool_outputs(
+        with self.client.beta.threads.runs.submit_tool_outputs_stream(
             thread_id=self.current_thread_id,
             run_id=run_id,
             tool_outputs=tool_outputs
-        )
+        ) as stream:
+            for text in stream.text_deltas:
+                print(text, end="", flush=True)
 
     def add_tool(self, func: Callable):
         sig = inspect.signature(func)
