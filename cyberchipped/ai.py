@@ -210,19 +210,8 @@ class AI:
             content=text,
         )
 
-        accumulated_response = []
-
-        class CustomEventHandler(EventHandler):
-            def __init__(self, tool_handlers, ai_instance, accumulated_response):
-                super().__init__(tool_handlers, ai_instance)
-                self.accumulated_response = accumulated_response
-
-            def on_text_delta(self, delta, snapshot):
-                self.accumulated_response.append(delta.value)
-                self.ai_instance.accumulated_value += delta.value
-
-        event_handler = CustomEventHandler(
-            self.tool_handlers, self, accumulated_response)
+        event_handler = EventHandler(
+            self.tool_handlers, self)
 
         with self.client.beta.threads.runs.stream(
             thread_id=thread_id,
@@ -233,13 +222,11 @@ class AI:
                 yield text
             stream.until_done()
 
-        response_text = "".join(accumulated_response)
-
         # Save the message to the database
         metadata = {
             "user_id": user_id,
             "message": text,
-            "response": response_text,
+            "response": self.accumulated_value,
             "timestamp": datetime.now(),
         }
 
@@ -317,6 +304,7 @@ class AI:
             tool_outputs=tool_outputs
         ) as stream:
             for text in stream.text_deltas:
+                self.accumulated_value += text
                 print(text, end="", flush=True)
 
     def add_tool(self, func: Callable):
