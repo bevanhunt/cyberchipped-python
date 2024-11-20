@@ -189,6 +189,25 @@ class AI:
 
         return thread_id
 
+    async def cancel_run(self, thread_id: str, run_id: str):
+        try:
+            self.client.beta.threads.runs.cancel(
+                thread_id=thread_id, run_id=run_id)
+        except Exception as e:
+            print(f"Error cancelling run: {e}")
+
+    async def get_active_run(self, thread_id: str) -> Optional[str]:
+        runs = self.client.beta.threads.runs.list(thread_id=thread_id, limit=1)
+        for run in runs:
+            if run.status in ['in_progress']:
+                return run.id
+        return None
+
+    async def get_run_status(self, thread_id: str, run_id: str) -> str:
+        run = self.client.beta.threads.runs.retrieve(
+            thread_id=thread_id, run_id=run_id)
+        return run.status
+
     async def listen(self, audio_content: bytes, input_format: str) -> str:
         transcription = self.client.audio.transcriptions.create(
             model="whisper-1",
@@ -206,15 +225,20 @@ class AI:
 
         self.current_thread_id = thread_id
 
+        # Check for active runs and cancel if necessary
+        active_run_id = await self.get_active_run(thread_id)
+        if active_run_id:
+            await self.cancel_run(thread_id, active_run_id)
+            while await self.get_run_status(thread_id, active_run_id) != "cancelled":
+                await asyncio.sleep(0.1)
+
         # Create a message in the thread
         self.client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
             content=user_text,
         )
-
-        event_handler = EventHandler(
-            self.tool_handlers, self)
+        event_handler = EventHandler(self.tool_handlers, self)
 
         async def stream_processor():
             with self.client.beta.threads.runs.stream(
