@@ -363,7 +363,6 @@ class AI:
         ) as stream:
             for text in stream.text_deltas:
                 asyncio.create_task(self.accumulated_value_queue.put(text))
-                print(text, end="", flush=True)
 
     def add_tool(self, func: Callable):
         sig = inspect.signature(func)
